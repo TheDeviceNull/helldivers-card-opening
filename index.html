@@ -600,9 +600,9 @@
       { id: '011-managed-s1', name: 'Managed Democracy', rarity: 'comune', color: '#2a2a3a', num: '011' },
     ];
 
-    // Per il demo selezioniamo 10 comuni + 1 rara (in produzione le manda il backend)
+    // Per il demo selezioniamo 5 comuni + 1 rara (in produzione le manda il backend)
     const SELECTED_CARDS = [
-      ...DEMO_CARDS.filter(c => c.rarity === 'comune').slice(0, 10),
+      ...DEMO_CARDS.filter(c => c.rarity === 'comune').slice(0, 5),
       ...DEMO_CARDS.filter(c => c.rarity === 'rara')
     ];
 
