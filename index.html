@@ -11,12 +11,14 @@
     :root {
       --yellow: #F5C400;
       --red: #C0281C;
-      --dark: #0a0a0a;
-      --darker: #050505;
-      --gray: #1a1a1a;
+      --blue-deep: #0a1628;
+      --blue-mid: #0d1f3c;
+      --dark: #0e1a2e;
+      --darker: #080f1c;
+      --gray: #1a2235;
       --text: #e8e0cc;
-      --muted: #7a7060;
-      --common-border: #4a4030;
+      --muted: #6a7a90;
+      --common-border: #2a3a50;
       --rare-glow: #F5C400;
     }
 
@@ -45,8 +47,8 @@
       position: fixed;
       inset: 0;
       background-image:
-        repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(245, 196, 0, 0.03) 40px),
-        repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(245, 196, 0, 0.03) 40px);
+        repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(100, 160, 255, 0.03) 40px),
+        repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(100, 160, 255, 0.03) 40px);
       pointer-events: none;
       z-index: 0;
     }
@@ -55,7 +57,9 @@
       content: '';
       position: fixed;
       inset: 0;
-      background: radial-gradient(ellipse at center, rgba(192, 40, 28, 0.08) 0%, transparent 70%);
+      background:
+        radial-gradient(ellipse at 30% 20%, rgba(20, 60, 120, 0.25) 0%, transparent 55%),
+        radial-gradient(ellipse at 70% 80%, rgba(192, 40, 28, 0.08) 0%, transparent 50%);
       pointer-events: none;
       z-index: 0;
     }
@@ -72,9 +76,9 @@
     }
 
     .eagle-icon {
-      width: 64px;
-      height: 64px;
-      opacity: 0.6;
+      width: 180px;
+      border-radius: 12px;
+      opacity: 0.9;
       animation: pulse-eagle 3s ease-in-out infinite;
     }
 
@@ -535,13 +539,8 @@
 
   <!-- SCHERMATA 1: Intro con busta -->
   <div id="screen-intro">
-    <!-- Eagle SVG inline -->
-    <svg class="eagle-icon" viewBox="0 0 100 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path
-        d="M50 10 L20 35 L5 30 L15 45 L2 50 L20 52 L25 70 L35 55 L50 65 L65 55 L75 70 L80 52 L98 50 L85 45 L95 30 L80 35 Z"
-        fill="#C0281C" opacity="0.9" />
-      <circle cx="50" cy="38" r="8" fill="#F5C400" />
-    </svg>
+    <!-- Logo Super Terra -->
+    <img class="eagle-icon" src="./assets/superearth.png" alt="Super Earth">
 
     <h1 class="intro-title">
       <span>Managed Democracy</span>
