@@ -651,7 +651,8 @@
     let currentToken = null;
 
     let timerInterval = null;
-    let secondsLeft = 3599; // 1 ora - 1 secondo
+    let secondsLeft = 3599; // Default 1 ora
+    let isDemoMode = false;
 
     // ===== APERTURA BUSTA =====
     function startOpening() {
@@ -771,6 +772,8 @@
 
     function runDemo() {
       console.log(">>> DEMO MODE ATTIVA");
+      isDemoMode = true;
+      secondsLeft = 60; // 1 minuto per test
       SELECTED_CARDS = [
         { id: '002-rare-CORE-Garba', num: '002', rarity: 'rare', series: 'CORE', name: 'Garba', filename: '002-Garba-rare.png' },
         { id: 'mock-1', num: '003', rarity: 'rare', series: 'CORE', name: 'Hellpod Strike', isMock: true },
@@ -942,7 +945,10 @@
 
     // ===== TIMER =====
     function startTimer() {
-      secondsLeft = 3599;
+      // In produzione secondsLeft viene calcolato dalla scadenza del token
+      // Se non siamo in demo, resetta a 1 ora (o usa il valore calcolato)
+      if (!isDemoMode) secondsLeft = 3599; 
+      
       updateTimerDisplay();
       timerInterval = setInterval(() => {
         secondsLeft--;
@@ -952,8 +958,10 @@
           return;
         }
         updateTimerDisplay();
-        // Cambio colore negli ultimi 5 minuti
-        if (secondsLeft < 300) {
+        
+        // Cambio colore: 5 minuti in prod, 20 secondi in demo
+        const threshold = isDemoMode ? 20 : 300;
+        if (secondsLeft < threshold) {
           document.getElementById('timer-display').style.color = '#C0281C';
         }
       }, 1000);
