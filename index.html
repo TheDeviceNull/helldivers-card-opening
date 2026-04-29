@@ -632,7 +632,7 @@
     // ===== CONFIGURAZIONE BACKEND =====
     // Sostituisci con il tuo URL Cloudflare Tunnel finale
     const API_BASE_URL = 'https://tuo-tunnel-configurato.trycloudflare.com';
-    const CARDS_ASSET_BASE = 'https://thedevicenull.github.io/HD2-Discord-Bot/cards/';
+    const CARDS_ASSET_BASE = './cards/'; // Carica dalla cartella locale
 
     let SELECTED_CARDS = [];
     let currentToken = null;
@@ -743,6 +743,11 @@
       const urlParams = new URLSearchParams(window.location.search);
       currentToken = urlParams.get('t');
 
+      if (currentToken === 'demo') {
+        runDemo();
+        return;
+      }
+
       if (!currentToken) {
         showError("Nessun token di autorizzazione trovato. Torna al fronte, soldato.");
         return;
@@ -750,6 +755,19 @@
 
       await validateToken(currentToken);
     });
+
+    function runDemo() {
+      console.log(">>> DEMO MODE ATTIVA");
+      SELECTED_CARDS = [
+        { id: '002-rare-CORE-Garba', num: '002', rarity: 'rare', series: 'CORE', name: 'Garba', filename: '002-Garba-rare.png' },
+        { id: 'mock-1', num: '003', rarity: 'rare', series: 'CORE', name: 'Hellpod Strike', isMock: true },
+        { id: 'mock-2', num: '004', rarity: 'comune', series: 'CORE', name: 'Liberator MkII', isMock: true },
+        { id: 'mock-3', num: '005', rarity: 'elite', series: 'WAR', name: 'Bile Titan Hunter', isMock: true },
+        { id: 'mock-4', num: '006', rarity: 'comune', series: 'CORE', name: 'Eagle Pilot', isMock: true }
+      ];
+      document.getElementById('screen-loading').style.display = 'none';
+      document.getElementById('screen-intro').style.display = 'flex';
+    }
 
     async function validateToken(token) {
       showLoading(true);
@@ -761,13 +779,28 @@
           // data.cards è un array di stringhe tipo ["001-rarita-serie-nome", ...]
           SELECTED_CARDS = data.cards.map(cardId => {
             const parts = cardId.split('-');
-            return {
-              id: cardId,
-              num: parts[0],
-              rarity: parts[1] || 'comune',
-              series: parts[2] || 'CORE',
-              name: parts[3] ? parts[3].replace(/-/g, ' ') : (parts[1] || 'Unknown')
-            };
+            // Supporto flessibile per 3 o 4 parti
+            // 3 parti: id-nome-rarita
+            // 4 parti: id-rarita-serie-nome
+            if (parts.length === 3) {
+              return {
+                id: cardId,
+                num: parts[0],
+                rarity: parts[2] || 'comune',
+                series: 'CORE',
+                name: parts[1].replace(/-/g, ' '),
+                filename: `${cardId}.png`
+              };
+            } else {
+              return {
+                id: cardId,
+                num: parts[0],
+                rarity: parts[1] || 'comune',
+                series: parts[2] || 'CORE',
+                name: parts[3] ? parts[3].replace(/-/g, ' ') : (parts[1] || 'Unknown'),
+                filename: `${cardId}.png`
+              };
+            }
           });
           showLoading(false);
           document.getElementById('screen-intro').style.display = 'flex';
@@ -829,15 +862,33 @@
 
     function buildCard(card) {
       const el = document.createElement('div');
-      const isRare = card.rarity === 'rare' || card.rarity === 'elite';
+      const isRare = card.rarity === 'rare' || card.rarity === 'elite' || card.rarity === 'rara';
       el.className = `card ${isRare ? 'rare' : 'common'}`;
       el.title = card.name;
 
-      const imgUrl = `${CARDS_ASSET_BASE}${card.id}.png`;
+      let cardContent = '';
+      if (card.isMock) {
+        cardContent = `
+          <div class="card-placeholder">
+            <div class="card-number">${card.num}</div>
+            <div class="card-codename">MOCKUP</div>
+          </div>
+        `;
+      } else {
+        const fileName = card.filename || `${card.id}.png`;
+        const imgUrl = `${CARDS_ASSET_BASE}${fileName}`;
+        cardContent = `
+          <img src="${imgUrl}" alt="${card.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <div class="card-placeholder" style="display:none">
+            <div class="card-number">${card.num}</div>
+            <div class="card-codename">${card.name}</div>
+          </div>
+        `;
+      }
 
       el.innerHTML = `
       <div class="card-img-wrapper">
-        <img src="${imgUrl}" alt="${card.name}" onerror="this.parentElement.innerHTML='<div class=\'card-placeholder\'><span class=\'card-number\'>${card.num}</span><span class=\'card-codename\'>${card.id}</span></div>'">
+        ${cardContent}
         ${isRare ? '<div class="rare-shimmer"></div>' : ''}
       </div>
       <div class="card-footer">
