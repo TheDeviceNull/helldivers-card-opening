@@ -224,7 +224,7 @@
       align-items: center;
       gap: 2rem;
       z-index: 1;
-      padding: 2rem 1rem;
+      padding: 12rem 1rem 5rem 1rem; /* Aumentato padding top per lo zoom */
       width: 100%;
       max-width: 900px;
     }
@@ -262,15 +262,18 @@
 
     /* Singola carta */
     .card {
-      width: 150px;
+      width: 180px; /* Leggermente più grandi di base */
       border-radius: 10px;
       overflow: hidden;
       position: relative;
       transform: translateY(60px) scale(0.8);
       opacity: 0;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s ease, opacity 0.5s ease;
       cursor: pointer;
       flex-shrink: 0;
+      z-index: 1;
+      image-rendering: high-quality;
+      backface-visibility: hidden;
     }
 
     .card.reveal {
@@ -295,8 +298,16 @@
     }
 
     .card:hover {
-      transform: translateY(-8px) scale(1.06);
-      z-index: 5;
+      transform: scale(2.1) translateY(5%) !important; /* Spinta leggermente in basso per non tagliare il top */
+      z-index: 100;
+      box-shadow: 0 40px 80px rgba(0, 0, 0, 0.9), 0 0 50px rgba(245, 196, 0, 0.3);
+    }
+
+    /* Evitiamo che le carte vicine coprano lo zoom */
+    .cards-grid:hover .card:not(:hover) {
+      filter: blur(2px) brightness(0.5);
+      transform: scale(0.9);
+      opacity: 0.6;
     }
 
     .card.common {
@@ -345,6 +356,8 @@
       height: 100%;
       object-fit: cover;
       display: block;
+      image-rendering: auto;
+      transform: translateZ(0);
     }
 
     /* Placeholder per il prototipo */
@@ -864,7 +877,7 @@
       const el = document.createElement('div');
       const isRare = card.rarity === 'rare' || card.rarity === 'elite' || card.rarity === 'rara';
       el.className = `card ${isRare ? 'rare' : 'common'}`;
-      el.title = card.name;
+      el.title = `Clicca per scaricare ${card.name}`;
 
       let cardContent = '';
       if (card.isMock) {
@@ -884,6 +897,16 @@
             <div class="card-codename">${card.name}</div>
           </div>
         `;
+
+        // Click per download
+        el.onclick = () => {
+          const link = document.createElement('a');
+          link.href = imgUrl;
+          link.download = fileName;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        };
       }
 
       el.innerHTML = `
@@ -896,6 +919,24 @@
         <span class="rarity-badge badge-${isRare ? 'rara' : 'comune'}">${card.rarity.toUpperCase()}</span>
       </div>
     `;
+
+      // Effetto 3D Mouse Move
+      el.addEventListener('mousemove', (e) => {
+        if (card.isMock) return;
+        const rect = el.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const xc = rect.width / 2;
+        const yc = rect.height / 2;
+        const dx = x - xc;
+        const dy = y - yc;
+        el.style.transform = `scale(2.1) translateY(5%) rotateY(${dx / 12}deg) rotateX(${-dy / 12}deg)`;
+      });
+
+      el.addEventListener('mouseleave', () => {
+        el.style.transform = '';
+      });
+
       return el;
     }
 
