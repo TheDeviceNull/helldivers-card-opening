@@ -527,6 +527,38 @@
       border-radius: 50%;
       opacity: 0;
     }
+    /* Schermate errore/loading */
+    #screen-loading, #screen-error {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+      z-index: 100;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .error-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 900;
+      font-size: 2.5rem;
+      color: var(--red);
+      text-transform: uppercase;
+    }
+
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 3px solid rgba(245, 196, 0, 0.1);
+      border-top: 3px solid var(--yellow);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 
@@ -536,6 +568,19 @@
   <div class="flash-overlay" id="flash"></div>
   <!-- Container particelle -->
   <div class="particles" id="particles"></div>
+
+  <!-- SCHERMATA: Loading -->
+  <div id="screen-loading">
+    <div class="loading-spinner"></div>
+    <p class="intro-subtitle">Verifica autorizzazioni Ministero della Verità...</p>
+  </div>
+
+  <!-- SCHERMATA: Errore -->
+  <div id="screen-error">
+    <h1 class="error-title">Accesso Negato</h1>
+    <p id="error-message" class="intro-subtitle">Token non valido o scaduto.</p>
+    <img class="eagle-icon" src="./assets/superearth.png" style="filter: grayscale(1) opacity(0.3); margin-top: 2rem;">
+  </div>
 
   <!-- SCHERMATA 1: Intro con busta -->
   <div id="screen-intro">
@@ -584,27 +629,13 @@
   <p class="md-footer">Managed Democracy © Super Earth Armed Forces</p>
 
   <script>
-    // ===== DATI PROTOTIPO =====
-    // In produzione: array di oggetti { id, name, rarity, url } ricevuti dal backend
-    const DEMO_CARDS = [
-      { id: '001-helldivers-s1', name: 'Helldiver Alpha', rarity: 'comune', color: '#2a3a2a', num: '001' },
-      { id: '002-terminid-s1', name: 'Terminid Warrior', rarity: 'comune', color: '#3a2a1a', num: '002' },
-      { id: '003-automaton-s1', name: 'Automaton Scout', rarity: 'comune', color: '#1a2a3a', num: '003' },
-      { id: '004-joel-s1', name: 'J.O.E.L.', rarity: 'rara', color: '#3a2a00', num: '★' },
-      { id: '005-bile-s1', name: 'Bile Titan', rarity: 'comune', color: '#2a3a1a', num: '005' },
-      { id: '006-eagle-s1', name: 'Eagle Airstrike', rarity: 'comune', color: '#3a1a2a', num: '006' },
-      { id: '007-pelican-s1', name: 'Pelican-1', rarity: 'comune', color: '#1a3a3a', num: '007' },
-      { id: '008-super-s1', name: 'Super Destroyer', rarity: 'comune', color: '#2a1a3a', num: '008' },
-      { id: '009-patriot-s1', name: 'EXO-49 Patriot', rarity: 'comune', color: '#3a3a1a', num: '009' },
-      { id: '010-democracy-s1', name: 'Democracy Officer', rarity: 'comune', color: '#1a1a2a', num: '010' },
-      { id: '011-managed-s1', name: 'Managed Democracy', rarity: 'comune', color: '#2a2a3a', num: '011' },
-    ];
+    // ===== CONFIGURAZIONE BACKEND =====
+    // Sostituisci con il tuo URL Cloudflare Tunnel finale
+    const API_BASE_URL = 'https://tuo-tunnel-configurato.trycloudflare.com';
+    const CARDS_ASSET_BASE = 'https://thedevicenull.github.io/HD2-Discord-Bot/cards/';
 
-    // Per il demo selezioniamo 5 comuni + 1 rara (in produzione le manda il backend)
-    const SELECTED_CARDS = [
-      ...DEMO_CARDS.filter(c => c.rarity === 'comune').slice(0, 5),
-      ...DEMO_CARDS.filter(c => c.rarity === 'rara')
-    ];
+    let SELECTED_CARDS = [];
+    let currentToken = null;
 
     let timerInterval = null;
     let secondsLeft = 3599; // 1 ora - 1 secondo
@@ -707,6 +738,63 @@
       }
     }
 
+    // ===== INIZIALIZZAZIONE =====
+    window.addEventListener('DOMContentLoaded', async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      currentToken = urlParams.get('t');
+
+      if (!currentToken) {
+        showError("Nessun token di autorizzazione trovato. Torna al fronte, soldato.");
+        return;
+      }
+
+      await validateToken(currentToken);
+    });
+
+    async function validateToken(token) {
+      showLoading(true);
+      try {
+        const response = await fetch(`${API_BASE_URL}/validate?t=${token}`);
+        const data = await response.json();
+
+        if (data.valid) {
+          // data.cards è un array di stringhe tipo ["001-rarita-serie-nome", ...]
+          SELECTED_CARDS = data.cards.map(cardId => {
+            const parts = cardId.split('-');
+            return {
+              id: cardId,
+              num: parts[0],
+              rarity: parts[1] || 'comune',
+              series: parts[2] || 'CORE',
+              name: parts[3] ? parts[3].replace(/-/g, ' ') : (parts[1] || 'Unknown')
+            };
+          });
+          showLoading(false);
+          document.getElementById('screen-intro').style.display = 'flex';
+        } else {
+          let msg = "Token non valido.";
+          if (data.reason === 'expired') msg = "Il tempo per questo premio è scaduto. La gloria è effimera.";
+          if (data.reason === 'already_used') msg = "Premio già ritirato. Non provare a ingannare il Ministero.";
+          showError(msg);
+        }
+      } catch (err) {
+        console.error(err);
+        showError("Connessione al Super Destroyer interrotta. Riprova più tardi.");
+      }
+    }
+
+    function showLoading(show) {
+      document.getElementById('screen-loading').style.display = show ? 'flex' : 'none';
+      document.getElementById('screen-intro').style.display = 'none';
+    }
+
+    function showError(msg) {
+      document.getElementById('screen-loading').style.display = 'none';
+      document.getElementById('screen-intro').style.display = 'none';
+      document.getElementById('screen-error').style.display = 'flex';
+      document.getElementById('error-message').textContent = msg;
+    }
+
     // ===== MOSTRA CARTE =====
     function showCards() {
       const cardsScreen = document.getElementById('screen-cards');
@@ -741,22 +829,20 @@
 
     function buildCard(card) {
       const el = document.createElement('div');
-      el.className = `card ${card.rarity}`;
+      const isRare = card.rarity === 'rare' || card.rarity === 'elite';
+      el.className = `card ${isRare ? 'rare' : 'common'}`;
       el.title = card.name;
 
-      // In produzione: <img src="${GITHUB_PAGES_BASE}/cards/${card.id}.png">
-      // Prototipo: placeholder colorato
+      const imgUrl = `${CARDS_ASSET_BASE}${card.id}.png`;
+
       el.innerHTML = `
       <div class="card-img-wrapper">
-        <div class="card-placeholder" style="background: ${card.color};">
-          <span class="card-number" style="color: ${card.rarity === 'rara' ? '#F5C400' : '#ffffff'}">${card.num}</span>
-          <span class="card-codename">${card.id}</span>
-        </div>
-        ${card.rarity === 'rara' ? '<div class="rare-shimmer"></div>' : ''}
+        <img src="${imgUrl}" alt="${card.name}" onerror="this.parentElement.innerHTML='<div class=\'card-placeholder\'><span class=\'card-number\'>${card.num}</span><span class=\'card-codename\'>${card.id}</span></div>'">
+        ${isRare ? '<div class="rare-shimmer"></div>' : ''}
       </div>
       <div class="card-footer">
         <span class="card-name">${card.name}</span>
-        <span class="rarity-badge badge-${card.rarity}">${card.rarity === 'rara' ? 'RARA' : 'COM'}</span>
+        <span class="rarity-badge badge-${isRare ? 'rara' : 'comune'}">${card.rarity.toUpperCase()}</span>
       </div>
     `;
       return el;
