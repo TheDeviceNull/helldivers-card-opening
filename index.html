@@ -303,18 +303,30 @@
       }
     }
 
-    .card:hover {
-      transform: scale(2.1) translateY(5%) !important;
-      /* Spinta leggermente in basso per non tagliare il top */
-      z-index: 100;
-      box-shadow: 0 40px 80px rgba(0, 0, 0, 0.9), 0 0 50px rgba(245, 196, 0, 0.3);
+    /* Effetti attivi solo su Desktop (dispositivi con mouse) */
+    @media (hover: hover) {
+      .card:hover {
+        transform: scale(2.1) translateY(5%) !important;
+        /* Spinta leggermente in basso per non tagliare il top */
+        z-index: 100;
+        box-shadow: 0 40px 80px rgba(0, 0, 0, 0.9), 0 0 50px rgba(245, 196, 0, 0.3);
+      }
+
+      /* Evitiamo che le carte vicine coprano lo zoom */
+      .cards-grid:hover .card:not(:hover) {
+        filter: blur(2px) brightness(0.5);
+        transform: scale(0.9);
+        opacity: 0.6;
+      }
     }
 
-    /* Evitiamo che le carte vicine coprano lo zoom */
-    .cards-grid:hover .card:not(:hover) {
-      filter: blur(2px) brightness(0.5);
-      transform: scale(0.9);
-      opacity: 0.6;
+    /* Ottimizzazione Mobile: Zoom ridotto al tocco o click */
+    @media (hover: none) {
+      .card.active-mobile {
+        transform: scale(1.1) !important;
+        z-index: 10;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+      }
     }
 
     .card.common {
@@ -421,11 +433,44 @@
 
     .card-footer {
       background: var(--dark);
-      padding: 6px 8px;
+      padding: 8px 10px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .card-info-group {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      overflow: hidden;
+    }
+
+    .download-icon-btn {
+      background: rgba(245, 196, 0, 0.1);
+      border: 1px solid rgba(245, 196, 0, 0.3);
+      color: var(--yellow);
+      width: 32px;
+      height: 32px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .download-icon-btn:hover {
+      background: var(--yellow);
+      color: var(--darker);
+    }
+
+    .download-icon-btn svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
     }
 
     .card-name {
@@ -978,7 +1023,6 @@
       const el = document.createElement('div');
       const isRare = ['rare', 'elite', 'legendary', 'rara'].includes(card.rarity);
       el.className = `card ${isRare ? 'rare' : 'common'}`;
-      el.title = `Clicca per scaricare ${card.name}`;
 
       let cardContent = '';
       if (card.isMock) {
@@ -998,9 +1042,31 @@
             <div class="card-codename">${card.name}</div>
           </div>
         `;
+      }
 
-        // Click per download
-        el.onclick = () => {
+      el.innerHTML = `
+      <div class="card-img-wrapper">
+        ${cardContent}
+        ${isRare ? '<div class="rare-shimmer"></div>' : ''}
+      </div>
+      <div class="card-footer">
+        <div class="card-info-group">
+          <span class="card-name">${card.name}</span>
+          <span class="rarity-badge badge-${isRare ? 'rara' : 'comune'}">${card.rarity.toUpperCase()}</span>
+        </div>
+        <button class="download-icon-btn" title="Scarica Immagine">
+          <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+        </button>
+      </div>
+    `;
+
+      // Gestione Download esplicito
+      const dlBtn = el.querySelector('.download-icon-btn');
+      if (dlBtn) {
+        dlBtn.onclick = (e) => {
+          e.stopPropagation(); // Evita di triggerare altri eventi sulla carta
+          const fileName = card.filename || `${card.id}.png`;
+          const imgUrl = `${CARDS_ASSET_BASE}${fileName}`;
           const link = document.createElement('a');
           link.href = imgUrl;
           link.download = fileName;
@@ -1010,19 +1076,9 @@
         };
       }
 
-      el.innerHTML = `
-      <div class="card-img-wrapper">
-        ${cardContent}
-        ${isRare ? '<div class="rare-shimmer"></div>' : ''}
-      </div>
-      <div class="card-footer">
-        <span class="card-name">${card.name}</span>
-        <span class="rarity-badge badge-${isRare ? 'rara' : 'comune'}">${card.rarity.toUpperCase()}</span>
-      </div>
-    `;
-
-      // Effetto 3D Mouse Move
+      // Effetto 3D Mouse Move - Solo se non è un dispositivo touch
       el.addEventListener('mousemove', (e) => {
+        if (window.matchMedia("(pointer: coarse)").matches) return; // Salta se touch
         if (card.isMock) return;
         const rect = el.getBoundingClientRect();
         const x = e.clientX - rect.left;
