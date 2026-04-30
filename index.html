@@ -646,7 +646,7 @@
       <span class="timer-countdown" id="timer-display">59:59</span>
     </div>
 
-    <button id="btn-reset" onclick="resetDemo()">↺ Reset Demo</button>
+
   </div>
 
   <p class="md-footer">Managed Democracy © Super Earth Armed Forces</p>
@@ -1018,23 +1018,7 @@
       document.getElementById('timer-display').textContent = '00:00';
     }
 
-    // ===== RESET DEMO =====
-    function resetDemo() {
-      clearInterval(timerInterval);
-      document.getElementById('screen-cards').style.display = 'none';
-      document.getElementById('screen-cards').style.opacity = '1';
-      document.getElementById('screen-cards').style.pointerEvents = 'auto';
-      document.querySelector('.cards-header p').textContent = 'Scarica le immagini prima che scada il tempo';
-      document.getElementById('timer-display').style.color = 'var(--yellow)';
 
-      const intro = document.getElementById('screen-intro');
-      intro.style.display = 'flex';
-      intro.style.opacity = '0';
-      setTimeout(() => {
-        intro.style.transition = 'opacity 0.4s';
-        intro.style.opacity = '1';
-      }, 50);
-    }
   </script>
 </body>
 
