@@ -762,14 +762,12 @@
     // ===== CONFIGURAZIONE BACKEND =====
     // Sostituisci con il tuo URL Cloudflare Tunnel finale
     const API_BASE_URL = 'https://analyze-dual-differences-models.trycloudflare.com';
-    const CARDS_ASSET_BASE = './cards/'; // Carica dalla cartella locale
 
     let SELECTED_CARDS = [];
     let currentToken = null;
 
     let timerInterval = null;
-    let secondsLeft = 3599; // Default 1 ora
-    let isDemoMode = false;
+    let secondsLeft = 3599;
 
     // ===== APERTURA BUSTA =====
     function startOpening() {
@@ -874,11 +872,6 @@
       const urlParams = new URLSearchParams(window.location.search);
       currentToken = urlParams.get('t');
 
-      if (currentToken === 'demo') {
-        runDemo();
-        return;
-      }
-
       if (!currentToken) {
         showError("Nessun token di autorizzazione trovato. Torna al fronte, soldato.");
         return;
@@ -887,47 +880,6 @@
       await validateToken(currentToken);
     });
 
-    // ===== DATABASE CARTE (Sincronizzato con cards.json) =====
-    const CARDS_DB = [
-      { "id": "000", "name": "Joel", "rarity": "legendary", "weight": 1, "filename": "000-Joel-legendary.png" },
-      { "id": "001", "name": "Maginot", "rarity": "rare", "weight": 15, "filename": "001-Maginot-rare.png" },
-      { "id": "002", "name": "Garba", "rarity": "rare", "weight": 15, "filename": "002-Garba-rare.png" },
-      { "id": "003", "name": "Laxas89", "rarity": "core", "weight": 80, "filename": "003-Laxas89-core.png" },
-      { "id": "004", "name": "AmaroK86", "rarity": "rare", "weight": 15, "filename": "004-AmaroK86-rare.png" },
-      { "id": "005", "name": "Jonny", "rarity": "rare", "weight": 15, "filename": "005-Jonny-rare.png" },
-      { "id": "006", "name": "MrNobody", "rarity": "core", "weight": 80, "filename": "006-MrNobody-core.png" },
-      { "id": "007", "name": "ElKuko", "rarity": "rare", "weight": 15, "filename": "007-ElKuko-rare.png" },
-      { "id": "008", "name": "CrazyMatt", "rarity": "core", "weight": 80, "filename": "008-CrazyMatt-core.png" },
-      { "id": "009", "name": "Fornisharp", "rarity": "elite", "weight": 5, "filename": "009-Fornisharp-elite.png" }
-    ];
-
-    function runDemo() {
-      console.log(">>> DEMO MODE ATTIVA: Estrazione pesata in corso...");
-      isDemoMode = true;
-      secondsLeft = 120; // 2 minuti per la demo
-
-      SELECTED_CARDS = [];
-      const totalWeight = CARDS_DB.reduce((sum, c) => sum + c.weight, 0);
-
-      // Estrazione di 5 carte
-      for (let i = 0; i < 5; i++) {
-        let random = Math.random() * totalWeight;
-        for (const card of CARDS_DB) {
-          if (random < card.weight) {
-            SELECTED_CARDS.push({
-              ...card,
-              num: card.id,
-              series: 'CORE'
-            });
-            break;
-          }
-          random -= card.weight;
-        }
-      }
-
-      document.getElementById('screen-loading').style.display = 'none';
-      document.getElementById('screen-intro').style.display = 'flex';
-    }
 
     async function validateToken(token) {
       showLoading(true);
@@ -1033,8 +985,8 @@
           </div>
         `;
       } else {
-        const fileName = card.filename || `${card.id}.png`;
-        const imgUrl = `${CARDS_ASSET_BASE}${fileName}`;
+        // URL autenticata: le immagini non sono mai esposte pubblicamente
+        const imgUrl = `${API_BASE_URL}/card-image?t=${currentToken}&file=${encodeURIComponent(card.id)}`;
         cardContent = `
           <img src="${imgUrl}" alt="${card.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
           <div class="card-placeholder" style="display:none">
@@ -1060,19 +1012,27 @@
       </div>
     `;
 
-      // Gestione Download esplicito
       const dlBtn = el.querySelector('.download-icon-btn');
       if (dlBtn) {
-        dlBtn.onclick = (e) => {
-          e.stopPropagation(); // Evita di triggerare altri eventi sulla carta
+        dlBtn.onclick = async (e) => {
+          e.stopPropagation();
           const fileName = card.filename || `${card.id}.png`;
-          const imgUrl = `${CARDS_ASSET_BASE}${fileName}`;
-          const link = document.createElement('a');
-          link.href = imgUrl;
-          link.download = fileName;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
+          const imgUrl = `${API_BASE_URL}/card-image?t=${currentToken}&file=${encodeURIComponent(card.id)}`;
+          try {
+            const resp = await fetch(imgUrl);
+            if (!resp.ok) throw new Error('Fetch fallito');
+            const blob = await resp.blob();
+            const objectUrl = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = objectUrl;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(objectUrl);
+          } catch (err) {
+            console.error('Download fallito:', err);
+          }
         };
       }
 
@@ -1099,10 +1059,6 @@
 
     // ===== TIMER =====
     function startTimer() {
-      // In produzione secondsLeft viene calcolato dalla scadenza del token
-      // Se non siamo in demo, resetta a 1 ora (o usa il valore calcolato)
-      if (!isDemoMode) secondsLeft = 3599;
-
       updateTimerDisplay();
       timerInterval = setInterval(() => {
         secondsLeft--;
@@ -1112,10 +1068,7 @@
           return;
         }
         updateTimerDisplay();
-
-        // Cambio colore: 5 minuti in prod, 20 secondi in demo
-        const threshold = isDemoMode ? 20 : 300;
-        if (secondsLeft < threshold) {
+        if (secondsLeft < 300) {
           document.getElementById('timer-display').style.color = '#C0281C';
         }
       }, 1000);
