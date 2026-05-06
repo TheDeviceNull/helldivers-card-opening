@@ -925,6 +925,7 @@
           let msg = "Token non valido.";
           if (data.reason === 'expired') msg = "Il tempo per questo premio è scaduto. La gloria è effimera.";
           if (data.reason === 'already_used') msg = "Premio già ritirato. Non provare a ingannare il Ministero.";
+          if (data.reason === 'rate_limit_exceeded') msg = "Troppe richieste. Riprova tra un minuto, soldato.";
           showError(msg);
         }
       } catch (err) {
