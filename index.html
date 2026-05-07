@@ -836,7 +836,6 @@
     let currentToken = null;
 
     let timerInterval = null;
-    let secondsLeft = 3599;
 
     // ===== AUDIO ENGINE =====
     let soundtracks = [];
@@ -1189,25 +1188,35 @@
 
     // ===== TIMER =====
     function startTimer() {
-      updateTimerDisplay();
-      timerInterval = setInterval(() => {
-        secondsLeft--;
-        if (secondsLeft <= 0) {
+      // Fissiamo il momento esatto della scadenza (1 ora da adesso)
+      const expirationTimestamp = Date.now() + (60 * 60 * 1000);
+
+      const updateFunc = () => {
+        const now = Date.now();
+        const diff = expirationTimestamp - now;
+
+        if (diff <= 0) {
           clearInterval(timerInterval);
+          document.getElementById('timer-display').textContent = '00:00';
           onTimerExpired();
           return;
         }
-        updateTimerDisplay();
-        if (secondsLeft < 300) {
+
+        // Convertiamo la differenza millisecondi in minuti/secondi reali
+        const totalSeconds = Math.ceil(diff / 1000);
+        const m = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+        const s = String(totalSeconds % 60).padStart(2, '0');
+
+        document.getElementById('timer-display').textContent = `${m}:${s}`;
+
+        // Allerta rossa sotto i 5 minuti (300 secondi)
+        if (totalSeconds < 300) {
           document.getElementById('timer-display').style.color = '#C0281C';
         }
-      }, 1000);
-    }
+      };
 
-    function updateTimerDisplay() {
-      const m = String(Math.floor(secondsLeft / 60)).padStart(2, '0');
-      const s = String(secondsLeft % 60).padStart(2, '0');
-      document.getElementById('timer-display').textContent = `${m}:${s}`;
+      updateFunc(); // Primo aggiornamento istantaneo
+      timerInterval = setInterval(updateFunc, 1000);
     }
 
     function onTimerExpired() {
