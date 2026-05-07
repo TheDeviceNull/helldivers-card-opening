@@ -683,10 +683,74 @@
         transform: rotate(360deg);
       }
     }
+
+    /* ===== AUDIO CONTROL ===== */
+    #audio-control {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(245, 196, 0, 0.3);
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    #audio-control:hover {
+      background: rgba(245, 196, 0, 0.1);
+      transform: scale(1.1);
+      border-color: var(--yellow);
+    }
+
+    #audio-control svg {
+      width: 20px;
+      height: 20px;
+      fill: var(--yellow);
+      transition: all 0.3s;
+    }
+
+    #audio-control.muted svg {
+      opacity: 0.4;
+      fill: var(--muted);
+    }
+
+    #audio-control.muted::after {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border: 1px solid var(--yellow);
+      border-radius: 50%;
+      animation: audio-pulse 2s infinite;
+      opacity: 0;
+    }
+
+    @keyframes audio-pulse {
+      0% { transform: scale(1); opacity: 0.5; }
+      100% { transform: scale(1.5); opacity: 0; }
+    }
   </style>
 </head>
 
 <body>
+
+  <!-- Audio Engine -->
+  <audio id="bg-music">
+    <source src="" type="audio/mpeg">
+  </audio>
+
+  <div id="audio-control" class="muted" onclick="toggleAudio()" title="Attiva/Disattiva Musica">
+    <svg id="icon-speaker" viewBox="0 0 24 24">
+      <path d="M14,3.23V5.29C16.89,6.15 19,8.83 19,12C19,15.17 16.89,17.85 14,18.71V20.77C18,19.86 21,16.28 21,12C21,7.72 18,4.14 14,3.23M16.5,12C16.5,10.23 15.5,8.71 14,7.97V16.02C15.5,15.29 16.5,13.77 16.5,12M3,9V15H7L12,20V4L7,9H3Z" />
+    </svg>
+  </div>
 
   <!-- Overlay flash bianco -->
   <div class="flash-overlay" id="flash"></div>
@@ -774,8 +838,68 @@
     let timerInterval = null;
     let secondsLeft = 3599;
 
+    // ===== AUDIO ENGINE =====
+    let soundtracks = [];
+    const bgMusic = document.getElementById('bg-music');
+    const audioControl = document.getElementById('audio-control');
+    let currentTrackIndex = 0;
+    let isMuted = true;
+
+    async function loadPlaylist() {
+      try {
+        const response = await fetch('assets/soundtracks.json');
+        soundtracks = await response.json();
+        if (soundtracks.length > 0) {
+          initPlaylist();
+        }
+      } catch (e) {
+        console.warn("Playlist JSON non trovata o non valida. Caricamento fallback...");
+        soundtracks = ['assets/soundtrack.mp3']; // Fallback standard
+        initPlaylist();
+      }
+    }
+
+    function initPlaylist() {
+      currentTrackIndex = Math.floor(Math.random() * soundtracks.length);
+      loadTrack(currentTrackIndex);
+    }
+
+    function loadTrack(index) {
+      bgMusic.src = soundtracks[index];
+      bgMusic.load();
+    }
+
+    function playNextTrack() {
+      if (soundtracks.length === 0) return;
+      currentTrackIndex = (currentTrackIndex + 1) % soundtracks.length;
+      loadTrack(currentTrackIndex);
+      if (!isMuted) {
+        bgMusic.play().catch(e => console.log("Errore riproduzione automatica"));
+      }
+    }
+
+    function toggleAudio() {
+      if (isMuted) {
+        bgMusic.play().catch(e => console.log("Autoplay bloccato"));
+        audioControl.classList.remove('muted');
+        isMuted = false;
+      } else {
+        bgMusic.pause();
+        audioControl.classList.add('muted');
+        isMuted = true;
+      }
+    }
+
+    bgMusic.onended = () => playNextTrack();
+    loadPlaylist();
+
     // ===== APERTURA BUSTA =====
     function startOpening() {
+      // Attivazione audio al primo click significativo (policy browser)
+      if (isMuted && soundtracks.length > 0) {
+        toggleAudio();
+      }
+
       const introEl = document.getElementById('screen-intro');
       const openingEl = document.getElementById('screen-opening');
       const packAnim = document.getElementById('pack-anim');
