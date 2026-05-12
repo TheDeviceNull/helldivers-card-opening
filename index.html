@@ -1042,6 +1042,20 @@
               };
             }
           });
+
+          // Determina la serie dominante per la busta
+          const seriesCounts = {};
+          SELECTED_CARDS.forEach(c => {
+            seriesCounts[c.series] = (seriesCounts[c.series] || 0) + 1;
+          });
+          const dominantSeries = Object.keys(seriesCounts).reduce((a, b) => seriesCounts[a] > seriesCounts[b] ? a : b);
+          
+          if (dominantSeries === 'INDD') {
+            document.getElementById('pack-img').src = './assets/busta_indd.png';
+            document.getElementById('pack-anim').src = './assets/busta_indd.png';
+            document.querySelector('.intro-subtitle').textContent = 'I Nemici della Democrazia sono stati individuati. Analizza i dati recuperati dal campo.';
+          }
+
           showLoading(false);
           document.getElementById('screen-intro').style.display = 'flex';
         } else {
