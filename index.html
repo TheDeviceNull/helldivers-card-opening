@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gli Eroi della Super Terra — Ritira il tuo Premio</title>
+  <title>Comando della Super Terra — Ritira il tuo Premio</title>
   <link rel="apple-touch-icon" sizes="192x192" href="assets/android-chrome-192x192.png">
   <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png">
@@ -733,8 +733,15 @@
     }
 
     @keyframes audio-pulse {
-      0% { transform: scale(1); opacity: 0.5; }
-      100% { transform: scale(1.5); opacity: 0; }
+      0% {
+        transform: scale(1);
+        opacity: 0.5;
+      }
+
+      100% {
+        transform: scale(1.5);
+        opacity: 0;
+      }
     }
   </style>
 </head>
@@ -748,7 +755,8 @@
 
   <div id="audio-control" class="muted" onclick="toggleAudio()" title="Attiva/Disattiva Musica">
     <svg id="icon-speaker" viewBox="0 0 24 24">
-      <path d="M14,3.23V5.29C16.89,6.15 19,8.83 19,12C19,15.17 16.89,17.85 14,18.71V20.77C18,19.86 21,16.28 21,12C21,7.72 18,4.14 14,3.23M16.5,12C16.5,10.23 15.5,8.71 14,7.97V16.02C15.5,15.29 16.5,13.77 16.5,12M3,9V15H7L12,20V4L7,9H3Z" />
+      <path
+        d="M14,3.23V5.29C16.89,6.15 19,8.83 19,12C19,15.17 16.89,17.85 14,18.71V20.77C18,19.86 21,16.28 21,12C21,7.72 18,4.14 14,3.23M16.5,12C16.5,10.23 15.5,8.71 14,7.97V16.02C15.5,15.29 16.5,13.77 16.5,12M3,9V15H7L12,20V4L7,9H3Z" />
     </svg>
   </div>
 
@@ -1049,7 +1057,7 @@
             seriesCounts[c.series] = (seriesCounts[c.series] || 0) + 1;
           });
           const dominantSeries = Object.keys(seriesCounts).reduce((a, b) => seriesCounts[a] > seriesCounts[b] ? a : b);
-          
+
           if (dominantSeries === 'INDD') {
             document.getElementById('pack-img').src = './assets/busta_indd.png';
             document.getElementById('pack-anim').src = './assets/busta_indd.png';
