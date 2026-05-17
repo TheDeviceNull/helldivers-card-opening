@@ -685,11 +685,18 @@
     }
 
     /* ===== AUDIO CONTROL ===== */
-    #audio-control {
+    #audio-control-wrapper {
       position: fixed;
       top: 20px;
       right: 20px;
       z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #audio-control {
       background: rgba(255, 255, 255, 0.05);
       backdrop-filter: blur(10px);
       border: 1px solid rgba(245, 196, 0, 0.3);
@@ -743,6 +750,18 @@
         opacity: 0;
       }
     }
+
+    #volume-slider {
+      width: 60px;
+      accent-color: var(--yellow);
+      cursor: pointer;
+      opacity: 0.5;
+      transition: opacity 0.3s;
+    }
+
+    #volume-slider:hover {
+      opacity: 1;
+    }
   </style>
 </head>
 
@@ -753,11 +772,14 @@
     <source src="" type="audio/mpeg">
   </audio>
 
-  <div id="audio-control" class="muted" onclick="toggleAudio()" title="Attiva/Disattiva Musica">
-    <svg id="icon-speaker" viewBox="0 0 24 24">
-      <path
-        d="M14,3.23V5.29C16.89,6.15 19,8.83 19,12C19,15.17 16.89,17.85 14,18.71V20.77C18,19.86 21,16.28 21,12C21,7.72 18,4.14 14,3.23M16.5,12C16.5,10.23 15.5,8.71 14,7.97V16.02C15.5,15.29 16.5,13.77 16.5,12M3,9V15H7L12,20V4L7,9H3Z" />
-    </svg>
+  <div id="audio-control-wrapper">
+    <div id="audio-control" class="muted" onclick="toggleAudio()" title="Attiva/Disattiva Musica">
+      <svg id="icon-speaker" viewBox="0 0 24 24">
+        <path
+          d="M14,3.23V5.29C16.89,6.15 19,8.83 19,12C19,15.17 16.89,17.85 14,18.71V20.77C18,19.86 21,16.28 21,12C21,7.72 18,4.14 14,3.23M16.5,12C16.5,10.23 15.5,8.71 14,7.97V16.02C15.5,15.29 16.5,13.77 16.5,12M3,9V15H7L12,20V4L7,9H3Z" />
+      </svg>
+    </div>
+    <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.75" oninput="changeVolume(this.value)" title="Volume">
   </div>
 
   <!-- Overlay flash bianco -->
@@ -896,6 +918,13 @@
         isMuted = true;
       }
     }
+
+    function changeVolume(val) {
+      bgMusic.volume = val;
+    }
+
+    // Set default volume
+    bgMusic.volume = 0.75;
 
     bgMusic.onended = () => playNextTrack();
     loadPlaylist();
