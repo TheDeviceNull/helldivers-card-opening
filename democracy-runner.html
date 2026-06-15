@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Democracy Runner – Helldivers 2</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    display:flex; justify-content:center; align-items:center;
+    min-height:100vh;
+    background:#0a100a;
+    font-family:'Courier New', monospace;
+  }
+
+  .game-wrapper { text-align:center; user-select:none; }
+
+  h1 {
+    color:#f0c420;
+    font-size:22px;
+    letter-spacing:4px;
+    text-shadow:0 0 12px rgba(240,196,32,0.6);
+    margin-bottom:4px;
+  }
+
+  .tagline {
+    color:#666;
+    font-size:10px;
+    letter-spacing:3px;
+    margin-bottom:10px;
+  }
+
+  .instructions {
+    color:#555;
+    font-size:12px;
+    margin-bottom:10px;
+    letter-spacing:1px;
+  }
+
+  #gameCanvas {
+    border:2px solid #f0c420;
+    border-radius:2px;
+    display:block;
+    margin:0 auto;
+    cursor:pointer;
+    box-shadow:0 0 30px rgba(240,196,32,0.15), inset 0 0 60px rgba(0,0,0,0.5);
+  }
+
+  .score-display {
+    margin-top:10px;
+    color:#f0c420;
+    font-size:14px;
+    letter-spacing:3px;
+  }
+
+  .score-display span { color:#fff; }
+
+  #loading {
+    position:fixed; inset:0;
+    background:#0a100a;
+    display:flex; align-items:center; justify-content:center;
+    flex-direction:column; gap:16px; z-index:100;
+  }
+
+  #loading p { color:#f0c420; font-family:'Courier New',monospace; letter-spacing:3px; font-size:14px; }
+  #loading-bar-wrap { width:200px; height:4px; background:#222; border:1px solid #444; }
+  #loading-bar { height:100%; background:#f0c420; width:0%; transition:width 0.3s; }
+  #loading-err { color:#cc2200; font-size:11px; display:none; }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <p>⚔ DEMOCRACY RUNNER</p>
+  <div id="loading-bar-wrap"><div id="loading-bar"></div></div>
+  <p id="loading-status">LOADING ASSETS...</p>
+  <p id="loading-err">sprites.png not found.<br>Place sprites.png in the same folder as this HTML file.</p>
+</div>
+
+<div class="game-wrapper" id="gameUI" style="display:none">
+  <h1>⚔ DEMOCRACY RUNNER</h1>
+  <p class="tagline">FOR SUPER EARTH — MANAGED DEMOCRACY APPROVED</p>
+  <p class="instructions">SPACE / ↑ = salto &nbsp;·&nbsp; ↓ = rotola &nbsp;·&nbsp; CLICK = salto</p>
+  <canvas id="gameCanvas" width="800" height="300"></canvas>
+  <div class="score-display">BEST: <span id="highScore">0</span></div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+//  SPRITE MAP  (sheet: 1408 × 768 px)
+//  Adjust offsets here if frames look misaligned
+// ─────────────────────────────────────────────
+// ─────────────────────────────────────────────
+//  SPRITE MAP  (sheet: 1408 × 768 px)
+//  Adjust offsets here if frames look misaligned
+// ─────────────────────────────────────────────
+// ─────────────────────────────────────────────
+//  SPRITE MAP  (sheet: 1408 × 768 px)
+//  Adjust offsets here if frames look misaligned
+// ─────────────────────────────────────────────
+const SM = {
+  // Configurazione reale: rettangolo 96x95, 6 colonne, 12 frame totali
+  helldiver_run:  { x:50,  y:70,  cw:92, ch:90,  cols:6, frames:12  },
+  // NUOVA MAPPATURA SALTO: 6 frame distribuiti su 3 colonne (va a capo dopo il 3° frame)
+  helldiver_jump: { x:700, y:122,  cw:92, ch:101,  cols:6, frames:6   },
+  scavenger:      { x:28,  y:314, cw:88,  ch:96,  cols:5, frames:10 },
+  warrior:        { x:468, y:314, cw:64,  ch:96,  cols:6, frames:12 },
+  hunter:         { x:852, y:314, cw:106, ch:96,  cols:5, frames:10 },
+  automaton:      { x:28,  y:548, cw:110, ch:96,  cols:4, frames:8  },
+};
+
+// ─────────────────────────────────────────────
+//  ASSET LOADER
+// ─────────────────────────────────────────────
+const sheet = new Image();
+let sheetReady = false;
+
+function loadSprites(callback) {
+  const bar = document.getElementById('loading-bar');
+  const status = document.getElementById('loading-status');
+
+  sheet.onload = () => {
+    bar.style.width = '100%';
+    status.textContent = 'READY — DEPLOYING HELLDIVER...';
+    sheetReady = true;
+    setTimeout(callback, 400);
+  };
+  sheet.onerror = () => {
+    document.getElementById('loading-err').style.display = 'block';
+    status.textContent = 'ASSET ERROR';
+  };
+
+  sheet.src = 'sprites.png';
+  let pct = 0;
+  const fake = setInterval(() => {
+    pct = Math.min(pct + 3, 85);
+    bar.style.width = pct + '%';
+    if(sheetReady) clearInterval(fake);
+  }, 80);
+}
+
+// ─────────────────────────────────────────────
+//  HELPER: draw a sprite frame (UNICA DEFINIZIONE CORRETTA)
+// ─────────────────────────────────────────────
+function drawFrame(ctx, key, frame, dx, dy, dw, dh, flipX=false) {
+  if(!sheetReady) return;
+  const s = SM[key];
+  const col = frame % s.cols;
+  const row = Math.floor(frame / s.cols);
+  
+  // GAP reale di 2 pixel neri rilevato nello spritesheet
+  const GAP = 0;
+  const sx = s.x + col * (s.cw + GAP);
+  const sy = s.y + row * (s.ch + GAP);
+
+  if(flipX) {
+    ctx.save();
+    ctx.scale(-1, 1);
+    ctx.drawImage(sheet, sx, sy, s.cw, s.ch, -dx-dw, dy, dw, dh);
+    ctx.restore();
+  } else {
+    ctx.drawImage(sheet, sx, sy, s.cw, s.ch, dx, dy, dw, dh);
+  }
+}
+// ─────────────────────────────────────────────
+//  GAME SETUP
+// ─────────────────────────────────────────────
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const highScoreEl = document.getElementById('highScore');
+
+let gameRunning = false, gameOver = false;
+let score = 0, highScore = 0, gameSpeed = 6, animationFrame = 0;
+const GRAVITY = 0.6;
+const GROUND_Y = 230;
+
+try { highScore = parseInt(localStorage.getItem('demRunHS')) || 0; } catch(e){}
+highScoreEl.textContent = highScore;
+
+// ─────────────────────────────────────────────
+//  STARS (static bg)
+// ─────────────────────────────────────────────
+const stars = Array.from({length:70}, ()=>({
+  x:Math.random()*800, y:Math.random()*180,
+  s:Math.random()*1.5+0.3, b:Math.random()
+}));
+
+// ─────────────────────────────────────────────
+//  HELLDIVER
+// ─────────────────────────────────────────────
+const diver = {
+  x:80, y:GROUND_Y,
+  w:69, h:69,         // Manteniamo proporzioni 1:1 stabili a schermo
+  velocityY:0, jumping:false, ducking:false,
+  runFrame:0, jumpFrame:0,
+  frameTimer:0, FRAME_RATE:5, // Abbassato a 5 per rendere la corsa più scattante e fluida
+
+draw() {
+    // 1. Salva lo stato pulito del Canvas prima di applicare modifiche
+    ctx.save();
+    
+    // 2. Forza il Canvas a usare l'opacità piena e il metodo di fusione standard.
+    // Questo impedisce agli RGBA delle particelle e dei gradienti di intaccare la trasparenza del PNG.
+    ctx.globalAlpha = 1.0;
+    ctx.globalCompositeOperation = 'source-over';
+
+    const key = this.jumping ? 'helldiver_jump' : 'helldiver_run';
+    if(this.ducking && !this.jumping) {
+      // Ducking: draw squashed run frame
+      drawFrame(ctx, 'helldiver_run', this.runFrame, this.x, this.y+20, this.w, this.h*0.6);
+    } else if(this.jumping) {
+      drawFrame(ctx, 'helldiver_jump', this.jumpFrame, this.x, this.y-8, this.w, this.h);
+    } else {
+      drawFrame(ctx, 'helldiver_run', this.runFrame, this.x, this.y, this.w, this.h);
+    }
+
+    // 3. Ripristina lo stato originario del Canvas per non rompere gli effetti grafici successivi
+    ctx.restore();
+  },
+
+  update() {
+    this.velocityY += GRAVITY;
+    this.y += this.velocityY;
+
+    if(this.y >= GROUND_Y) {
+      this.y = GROUND_Y;
+      this.jumping = false;
+      this.velocityY = 0;
+    }
+
+    this.frameTimer++;
+    if(this.frameTimer >= this.FRAME_RATE) {
+      this.frameTimer = 0;
+      if(this.jumping) {
+        this.jumpFrame = Math.min(this.jumpFrame + 1, SM.helldiver_jump.frames - 1);
+      } else {
+        this.runFrame = (this.runFrame + 1) % SM.helldiver_run.frames;
+      }
+    }
+  },
+
+  jump() {
+    if(!this.jumping && !this.ducking) {
+      this.velocityY = -14;
+      this.jumping = true;
+      this.jumpFrame = 0;
+    }
+  },
+
+  duck(v) {
+    if(!this.jumping) this.ducking = v;
+  },
+
+  getBounds() {
+    if(this.ducking) return {x:this.x+4, y:this.y+20, w:this.w-8, h:this.h*0.6-4};
+    return {x:this.x+6, y:this.y-4, w:this.w-12, h:this.h+4};
+  }
+};
+
+// ─────────────────────────────────────────────
+//  OBSTACLES
+// ─────────────────────────────────────────────
+let obstacles = [];
+
+class GroundBug {
+  constructor(type) {
+    this.type = type; // 'scavenger' | 'warrior'
+    this.x = canvas.width + 20;
+    this.frame = 0;
+    this.frameTimer = 0;
+    if(type === 'scavenger') {
+      this.w = 52; this.h = 48;
+    } else {
+      this.w = 64; this.h = 60;
+    }
+    this.y = GROUND_Y + 64 - this.h; // feet on ground
+  }
+
+  draw() {
+    // Mirror horizontally so bugs face left (toward player)
+    drawFrame(ctx, this.type, this.frame, this.x, this.y, this.w, this.h, true);
+  }
+
+  update() {
+    this.x -= gameSpeed;
+    this.frameTimer++;
+    if(this.frameTimer >= 5) {
+      this.frameTimer = 0;
+      this.frame = (this.frame + 1) % SM[this.type].frames;
+    }
+  }
+
+  getBounds() {
+    return {x:this.x+6, y:this.y+6, w:this.w-12, h:this.h-8};
+  }
+}
+
+class FlyingEnemy {
+  constructor() {
+    this.x = canvas.width + 20;
+    // Hunter flies at two heights: high (jump-over) or mid (duck-under)
+    const variant = Math.random() < 0.5 ? 'high' : 'mid';
+    this.groundOffset = variant === 'high' ? 110 : 60;
+    this.y = GROUND_Y + 64 - this.h - this.groundOffset;
+    this.w = 64; this.h = 52;
+    this.frame = 0; this.frameTimer = 0;
+    // Recalc y with correct h
+    this.y = GROUND_Y + 64 - this.h - this.groundOffset;
+  }
+
+  draw() {
+    drawFrame(ctx, 'hunter', this.frame, this.x, this.y, this.w, this.h, true);
+  }
+
+  update() {
+    this.x -= gameSpeed + 1.5;
+    this.frameTimer++;
+    if(this.frameTimer >= 4) {
+      this.frameTimer = 0;
+      this.frame = (this.frame + 1) % SM.hunter.frames;
+    }
+  }
+
+  getBounds() {
+    return {x:this.x+8, y:this.y+6, w:this.w-16, h:this.h-10};
+  }
+}
+
+class AutomatonTroop {
+  constructor() {
+    this.x = canvas.width + 20;
+    this.w = 52; this.h = 62;
+    this.y = GROUND_Y + 64 - this.h;
+    this.frame = 0; this.frameTimer = 0;
+  }
+
+  draw() {
+    drawFrame(ctx, 'automaton', this.frame, this.x, this.y, this.w, this.h, true);
+  }
+
+  update() {
+    this.x -= gameSpeed;
+    this.frameTimer++;
+    if(this.frameTimer >= 6) {
+      this.frameTimer = 0;
+      this.frame = (this.frame + 1) % SM.automaton.frames;
+    }
+  }
+
+  getBounds() {
+    return {x:this.x+6, y:this.y+4, w:this.w-12, h:this.h-6};
+  }
+}
+
+// ─────────────────────────────────────────────
+//  PARTICLES
+// ─────────────────────────────────────────────
+let particles = [];
+
+function spawnExplosion(x, y) {
+  for(let i=0; i<16; i++) {
+    const a = Math.random()*Math.PI*2, s = Math.random()*5+1;
+    particles.push({
+      x, y, vx:Math.cos(a)*s, vy:Math.sin(a)*s-2,
+      life:35, maxLife:35,
+      r:Math.random()*5+2,
+      hot: Math.random() > 0.4
+    });
+  }
+}
+
+function updateParticles() {
+  particles.forEach((p,i) => {
+    p.x += p.vx; p.y += p.vy; p.vy += 0.25; p.life--;
+    const pct = p.life/p.maxLife;
+    ctx.fillStyle = p.hot
+      ? `rgba(255,${Math.floor(180*pct)},0,${pct})`
+      : `rgba(80,80,80,${pct})`;
+    const r = p.r*pct;
+    ctx.fillRect(p.x-r/2, p.y-r/2, r, r);
+    if(p.life<=0) particles.splice(i,1);
+  });
+}
+
+// ─────────────────────────────────────────────
+//  BACKGROUND ELEMENTS
+// ─────────────────────────────────────────────
+let groundOffset = 0;
+
+// Distant dropships
+let dropships = Array.from({length:3}, (_,i)=>({
+  x:150+i*280, y:10+Math.random()*50, speed:0.3+Math.random()*0.4, w:14+Math.random()*10
+}));
+
+function drawBackground() {
+  // Sky
+  const sky = ctx.createLinearGradient(0,0,0,180);
+  sky.addColorStop(0,'#020802');
+  sky.addColorStop(1,'#0d1a0d');
+  ctx.fillStyle = sky;
+  ctx.fillRect(0,0,800,300);
+
+  // Stars
+  stars.forEach(s=>{
+    const twinkle = 0.4+0.4*Math.sin(animationFrame*0.03+s.b*8);
+    ctx.fillStyle=`rgba(255,255,220,${twinkle*s.b*0.8})`;
+    ctx.fillRect(s.x,s.y,s.s,s.s);
+  });
+
+  // Moon
+  ctx.fillStyle='#9a9878';
+  ctx.beginPath(); ctx.arc(690,38,22,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#020802';
+  ctx.beginPath(); ctx.arc(700,33,18,0,Math.PI*2); ctx.fill();
+
+  // Horizon battle glow
+  ctx.fillStyle='rgba(160,40,0,0.07)';
+  ctx.fillRect(0,140,800,30);
+
+  // Distant dropships
+  dropships.forEach((d,i)=>{
+    ctx.fillStyle='rgba(140,110,20,0.4)';
+    ctx.fillRect(d.x, d.y, d.w, 4);
+    ctx.fillRect(d.x+d.w-3, d.y+2, 5, 3);
+    ctx.fillStyle='rgba(255,180,0,0.25)';
+    ctx.fillRect(d.x+d.w+1, d.y+2, 3, 2);
+    d.x -= gameSpeed*d.speed;
+    if(d.x < -60) { d.x = 860; d.y = 10+Math.random()*50; }
+  });
+}
+
+function drawGround() {
+  // Dirt base
+  ctx.fillStyle='#111a0d';
+  ctx.fillRect(0, GROUND_Y+64, 800, 300-(GROUND_Y+64));
+
+  // Ground line (golden, Helldivers style)
+  ctx.fillStyle='#f0c420';
+  ctx.fillRect(0, GROUND_Y+63, 800, 2);
+
+  // Darker strip
+  ctx.fillStyle='#1a2a10';
+  ctx.fillRect(0, GROUND_Y+65, 800, 10);
+
+  // Ground texture / debris
+  ctx.fillStyle='#2a3a18';
+  for(let i=(-groundOffset%24); i<800; i+=24) {
+    if(Math.sin(i*0.31+groundOffset*0.05)>0.25) ctx.fillRect(i, GROUND_Y+68, 5, 2);
+    if(Math.sin(i*0.53+groundOffset*0.03)>0.4)  ctx.fillRect(i+12, GROUND_Y+72, 3, 2);
+  }
+
+  // Occasional blood puddles
+  ctx.fillStyle='rgba(80,0,0,0.25)';
+  for(let i=(-groundOffset%90); i<800; i+=90) {
+    if(Math.sin(i*1.7)>0.4) ctx.fillRect(i, GROUND_Y+64, 18, 3);
+  }
+}
+
+// ─────────────────────────────────────────────
+//  COLLISION
+// ─────────────────────────────────────────────
+function collides(a, b) {
+  const pad = 4;
+  return a.x+pad < b.x+b.w-pad && a.x+a.w-pad > b.x+pad &&
+         a.y+pad < b.y+b.h-pad && a.y+a.h-pad > b.y+pad;
+}
+
+// ─────────────────────────────────────────────
+//  SPAWN LOGIC
+// ─────────────────────────────────────────────
+let spawnTimer = 60;
+
+function spawnObstacle() {
+  if(spawnTimer > 0) { spawnTimer--; return; }
+
+  const roll = Math.random();
+  if(score > 800 && roll < 0.25) {
+    obstacles.push(new AutomatonTroop());
+  } else if(score > 400 && roll < 0.45) {
+    obstacles.push(new FlyingEnemy());
+  } else if(score > 200 && roll < 0.6) {
+    obstacles.push(new GroundBug('warrior'));
+  } else {
+    obstacles.push(new GroundBug('scavenger'));
+  }
+
+  spawnTimer = Math.floor(Math.random()*70 + 45);
+}
+
+// ─────────────────────────────────────────────
+//  HUD
+// ─────────────────────────────────────────────
+function drawHUD() {
+  // Score
+  ctx.fillStyle='#f0c420';
+  ctx.font='bold 18px Courier New';
+  ctx.textAlign='right';
+  ctx.fillText(String(score).padStart(6,'0'), 778, 30);
+  ctx.font='9px Courier New';
+  ctx.fillStyle='#666';
+  ctx.fillText('SAMPLES', 778, 43);
+
+  // Threat level bar
+  if(gameRunning && !gameOver) {
+    const threat = Math.min(1, (gameSpeed - 6) / 6);
+    ctx.fillStyle='#222';
+    ctx.fillRect(12, 12, 80, 5);
+    ctx.fillStyle = threat > 0.6 ? '#cc2200' : '#f0c420';
+    ctx.fillRect(12, 12, threat*80, 5);
+    ctx.fillStyle='#555';
+    ctx.font='9px Courier New';
+    ctx.textAlign='left';
+    ctx.fillText('THREAT', 12, 28);
+  }
+}
+
+// ─────────────────────────────────────────────
+//  OVERLAY SCREENS
+// ─────────────────────────────────────────────
+function drawStartScreen() {
+  ctx.fillStyle='rgba(0,0,0,0.65)';
+  ctx.fillRect(0,0,800,300);
+
+  ctx.textAlign='center';
+  ctx.fillStyle='#f0c420';
+  ctx.font='bold 30px Courier New';
+  ctx.fillText('FOR SUPER EARTH', 400, 110);
+
+  ctx.fillStyle='#888';
+  ctx.font='13px Courier New';
+  ctx.fillText('PREMI SPAZIO PER DIFFONDERE LA DEMOCRAZIA', 400, 148);
+
+  ctx.fillStyle='rgba(240,196,32,0.12)';
+  ctx.fillRect(180,158,440,2);
+
+  ctx.fillStyle='#444';
+  ctx.font='10px Courier New';
+  ctx.fillText('MANAGED DEMOCRACY APPROVED — LEVEL E-710', 400, 178);
+}
+
+function drawGameOverScreen() {
+  ctx.fillStyle='rgba(0,0,0,0.72)';
+  ctx.fillRect(0,0,800,300);
+
+  ctx.fillStyle='rgba(180,30,0,0.15)';
+  ctx.fillRect(0,0,800,300);
+
+  ctx.textAlign='center';
+  ctx.fillStyle='#cc2200';
+  ctx.font='bold 32px Courier New';
+  ctx.fillText('HELLDIVER DOWN', 400, 108);
+
+  ctx.fillStyle='#f0c420';
+  ctx.font='15px Courier New';
+  ctx.fillText(`CAMPIONI RACCOLTI: ${String(score).padStart(6,'0')}`, 400, 145);
+
+  if(score >= highScore && score > 0) {
+    ctx.fillStyle='#ffee44';
+    ctx.font='12px Courier New';
+    ctx.fillText('★ NUOVO RECORD ★', 400, 164);
+  }
+
+  ctx.fillStyle='#666';
+  ctx.font='12px Courier New';
+  ctx.fillText('PREMI SPAZIO PER REINFORCE', 400, 188);
+}
+
+// ─────────────────────────────────────────────
+//  GAME LOOP
+// ─────────────────────────────────────────────
+function gameLoop() {
+  ctx.clearRect(0,0,800,300);
+
+  drawBackground();
+
+  groundOffset += gameSpeed;
+  drawGround();
+
+  if(gameRunning && !gameOver) {
+    diver.update();
+    spawnObstacle();
+
+    obstacles.forEach((ob,i) => {
+      ob.update();
+      ob.draw();
+      if(collides(diver.getBounds(), ob.getBounds())) {
+        spawnExplosion(diver.x+24, diver.y+24);
+        gameOver = true;
+        if(score > highScore) {
+          highScore = score;
+          try { localStorage.setItem('demRunHS', highScore); } catch(e){}
+          highScoreEl.textContent = highScore;
+        }
+      }
+      if(ob.x < -100) obstacles.splice(i,1);
+    });
+
+    score++;
+    if(score % 100 === 0) gameSpeed = Math.min(gameSpeed + 0.18, 16);
+    animationFrame++;
+
+  } else {
+    obstacles.forEach(ob => ob.draw());
+  }
+
+  updateParticles();
+
+  diver.draw();
+  drawHUD();
+
+  if(!gameRunning && !gameOver) drawStartScreen();
+  if(gameOver) drawGameOverScreen();
+
+  requestAnimationFrame(gameLoop);
+}
+
+// ─────────────────────────────────────────────
+//  RESET
+// ─────────────────────────────────────────────
+function resetGame() {
+  obstacles = []; particles = [];
+  score = 0; gameSpeed = 6;
+  diver.y = GROUND_Y; diver.velocityY = 0;
+  diver.jumping = false; diver.ducking = false;
+  diver.runFrame = 0; diver.jumpFrame = 0;
+  spawnTimer = 80;
+  gameRunning = true; gameOver = false;
+}
+
+// ─────────────────────────────────────────────
+//  INPUT
+// ─────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if(e.code==='Space'||e.code==='ArrowUp') {
+    e.preventDefault();
+    if(!gameRunning||gameOver) resetGame(); else diver.jump();
+  }
+  if(e.code==='ArrowDown') { e.preventDefault(); diver.duck(true); }
+});
+document.addEventListener('keyup', e => {
+  if(e.code==='ArrowDown') diver.duck(false);
+});
+canvas.addEventListener('click', () => {
+  if(!gameRunning||gameOver) resetGame(); else diver.jump();
+});
+// Mobile touch
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  if(!gameRunning||gameOver) resetGame(); else diver.jump();
+}, {passive:false});
+
+// ─────────────────────────────────────────────
+//  BOOT
+// ─────────────────────────────────────────────
+loadSprites(() => {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('gameUI').style.display = 'block';
+  gameLoop();
+});
+</script>
+</body>
+</html>
