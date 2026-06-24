@@ -1412,9 +1412,9 @@
           // Gradient color: Yellow-neon, turning into red at peaks
           const gradient = ctx.createLinearGradient(x, height, x, y);
           gradient.addColorStop(0, 'rgba(245, 196, 0, 0.15)');
-          gradient.addColorStop(0.3, 'var(--yellow)');
+          gradient.addColorStop(0.3, '#F5C400');
           gradient.addColorStop(0.8, '#ff6600');
-          gradient.addColorStop(1, 'var(--red)');
+          gradient.addColorStop(1, '#C0281C');
 
           ctx.fillStyle = gradient;
           ctx.fillRect(x + gap/2, y, barWidth - gap, barHeight);
@@ -1438,7 +1438,7 @@
         
         // Glowing color based on frequency power
         ctx.strokeStyle = `rgba(245, 196, 0, ${0.5 + (bass / 510)})`;
-        ctx.shadowColor = 'var(--yellow)';
+        ctx.shadowColor = '#F5C400';
         ctx.shadowBlur = 10;
         
         const sliceWidth = width / dataArray.length;
@@ -1501,8 +1501,8 @@
         // Draw orbital particle points
         ctx.beginPath();
         ctx.lineWidth = 2;
-        ctx.strokeStyle = 'var(--yellow)';
-        ctx.shadowColor = 'var(--yellow)';
+        ctx.strokeStyle = '#F5C400';
+        ctx.shadowColor = '#F5C400';
         ctx.shadowBlur = 15;
 
         const count = 72;
