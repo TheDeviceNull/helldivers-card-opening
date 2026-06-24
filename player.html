@@ -885,6 +885,11 @@
                 <path d="M16,18H18V6H16M6,18L14.5,12L6,6V18Z" />
               </svg>
             </button>
+            <button class="control-btn" id="btn-shuffle" title="Attiva Riproduzione Casuale">
+              <svg viewBox="0 0 24 24">
+                <path d="M14.83,13.41L13.42,14.82L16.59,18H15A3,3 0 0,1 12,15A3,3 0 0,1 9,18H2V20H9A5,5 0 0,0 14,15A5,5 0 0,0 17,20H22V18L14.83,13.41M18,9H15A3,3 0 0,0 12,12A3,3 0 0,0 9,9H2V11H9A5,5 0 0,1 14,12A5,5 0 0,1 17,11H22V9H18M18,5H15A3,3 0 0,0 12,8L10.59,6.59C11.66,5.59 13.24,5 15,5H18V2L22,6L18,10V5M6.59,17.41L2,12.83V14.24L5.17,17.41C5.59,17.83 6.1,18 6.59,18H9V16H6.59M9,6H2V8H9A3,3 0 0,1 12,11L13.41,9.59C12.34,8.59 10.76,8 9,6Z"/>
+              </svg>
+            </button>
           </div>
 
           <div class="volume-group">
@@ -929,6 +934,7 @@
     let activeMode = 'bars'; // bars, wave, nebula, warp
     let isMuted = false;
     let savedVolume = 0.7;
+    let isShuffle = false;
 
     // Web Audio Variables
     let audioCtx = null;
@@ -948,6 +954,7 @@
     const playIcon = document.getElementById('play-icon');
     const prevBtn = document.getElementById('btn-prev');
     const nextBtn = document.getElementById('btn-next');
+    const shuffleBtn = document.getElementById('btn-shuffle');
     const progressBar = document.getElementById('progress-bar');
     const progressFill = document.getElementById('progress-fill');
     const timeCurrent = document.getElementById('time-current');
@@ -1007,6 +1014,103 @@
       }
     }
 
+    // Metadati di fallback in caso di tag ID3 assenti o errori di caricamento
+    const FALLBACK_METADATA = [
+      { title: "A Cup of Liber-Tea", artist: "Super Earth Orchestra" },
+      { title: "Helldivers Departs", artist: "Super Earth Symphony" },
+      { title: "Combat Ambient", artist: "Ministry of Truth Band" },
+      { title: "The Automaton Threat", artist: "Cyberstan Remnants" },
+      { title: "Terminid Swarm", artist: "Hellmire Echoes" },
+      { title: "Pelican-1 Departure", artist: "Super Earth Armed Forces" },
+      { title: "Main Theme", artist: "Super Earth Orchestra" },
+      { title: "Super Earth Anthem", artist: "Malevelon Creek Choir" },
+      { title: "Dive Into Hell", artist: "500KG Symphony" },
+      { title: "Freedom March", artist: "Managed Democracy Band" },
+      { title: "Bug Hunt Erata Prime", artist: "SST Veteran Band" },
+      { title: "Cybernetic March", artist: "Automaton Voices" },
+      { title: "Deployment Active", artist: "SES Whisper of Judgment" },
+      { title: "Galactic Map System", artist: "Super Destroyer AI" },
+      { title: "Draupnir Combat", artist: "Draupnir Echoes" },
+      { title: "Victory Anthem", artist: "Ministry of Prosperity" },
+      { title: "Memorial Malevelon", artist: "Creek Choir" },
+      { title: "The Galactic War Map", artist: "Helldivers High Command" },
+      { title: "Emergency Broadcast", artist: "Ministry of Defense" },
+      { title: "Freedom's Progress", artist: "Super Earth Orchestra" }
+    ];
+
+    // Generatore di copertine procedurali (Target Reticle e Stella della Super Terra)
+    function generateProceduralCover(trackId, title) {
+      try {
+        const canvasCover = document.createElement('canvas');
+        canvasCover.width = 300;
+        canvasCover.height = 300;
+        const c = canvasCover.getContext('2d');
+        
+        // Sfondo a gradiente radiale tattico
+        const grad = c.createRadialGradient(150, 150, 20, 150, 150, 180);
+        const hues = [45, 0, 200, 140, 290]; // Giallo, Rosso, Blu, Verde, Viola
+        const hue = hues[trackId % hues.length];
+        grad.addColorStop(0, `hsla(${hue}, 80%, 20%, 1)`);
+        grad.addColorStop(1, `hsla(${hue}, 95%, 4%, 1)`);
+        c.fillStyle = grad;
+        c.fillRect(0, 0, 300, 300);
+        
+        // Griglia sonar
+        c.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+        c.lineWidth = 1;
+        for (let x = 0; x <= 300; x += 20) {
+          c.beginPath(); c.moveTo(x, 0); c.lineTo(x, 300); c.stroke();
+          c.beginPath(); c.moveTo(0, x); c.lineTo(300, x); c.stroke();
+        }
+        
+        // Cerchi sonar
+        c.strokeStyle = `hsla(${hue}, 80%, 50%, 0.25)`;
+        c.lineWidth = 1.5;
+        c.beginPath(); c.arc(150, 150, 70, 0, Math.PI * 2); c.stroke();
+        c.beginPath(); c.arc(150, 150, 105, 0, Math.PI * 2); c.stroke();
+        
+        // Mirino
+        c.strokeStyle = `hsla(${hue}, 85%, 50%, 0.35)`;
+        c.beginPath(); c.moveTo(150, 20); c.lineTo(150, 280); c.stroke();
+        c.beginPath(); c.moveTo(20, 150); c.lineTo(280, 150); c.stroke();
+        
+        // Stella centrale dorata della Super Terra
+        c.fillStyle = '#F5C400';
+        c.beginPath();
+        const cx = 150, cy = 150, spikes = 5, outerRadius = 24, innerRadius = 10;
+        let rot = Math.PI / 2 * 3;
+        let x = cx, y = cy;
+        const step = Math.PI / spikes;
+        c.moveTo(cx, cy - outerRadius);
+        for (let i = 0; i < spikes; i++) {
+          x = cx + Math.cos(rot) * outerRadius;
+          y = cy + Math.sin(rot) * outerRadius;
+          c.lineTo(x, y);
+          rot += step;
+          x = cx + Math.cos(rot) * innerRadius;
+          y = cy + Math.sin(rot) * innerRadius;
+          c.lineTo(x, y);
+          rot += step;
+        }
+        c.lineTo(cx, cy - outerRadius);
+        c.closePath();
+        c.fill();
+        
+        // Testi
+        c.fillStyle = 'rgba(232, 224, 204, 0.8)';
+        c.font = '900 12px "Barlow Condensed"';
+        c.textAlign = 'center';
+        c.fillText("SUPER EARTH TACTICAL SOUNDS", 150, 225);
+        c.fillStyle = '#F5C400';
+        c.font = '900 15px "Barlow Condensed"';
+        c.fillText(`TRACK INDEX: SEC-T-${String(trackId + 1).padStart(2, '0')}`, 150, 245);
+        
+        return canvasCover.toDataURL();
+      } catch (err) {
+        return '';
+      }
+    }
+
     // Load Soundtrack JSON List
     async function loadSoundtracks() {
       try {
@@ -1015,17 +1119,16 @@
         const list = await response.json();
         
         soundtracks = list.map((item, index) => {
-          // Ricava un nome di fallback gradevole dal path
           const filename = item.split('/').pop();
-          const cleanName = filename.replace('.mp3', '').replace('soundtrack_', 'SONDAGGIO ACUSTICO #');
+          const fallback = FALLBACK_METADATA[index] || { title: `COLONNA SONORA DIGITALE #${index}`, artist: "MINISTERO VERITÀ" };
           return {
             id: index,
             path: item,
-            title: `Soundtrack ${index}`,
-            displayName: `COLONNA SONORA DIGITALE #${index}`,
+            title: fallback.title,
+            displayName: fallback.title.toUpperCase(),
             filename: filename,
-            artist: '',
-            coverUrl: null,
+            artist: fallback.artist,
+            coverUrl: generateProceduralCover(index, fallback.title),
             metadataLoaded: false
           };
         });
@@ -1033,7 +1136,7 @@
         renderPlaylist();
         if (soundtracks.length > 0) {
           selectTrack(0, false);
-          // Esegue la lettura asincrona e progressiva dei tag di ciascun file MP3
+          // Esegue la lettura asincrona e progressiva dei tag
           soundtracks.forEach(track => {
             setTimeout(() => loadTrackMetadata(track), track.id * 150);
           });
@@ -1044,46 +1147,75 @@
       }
     }
 
-    // Lettore dei tag ID3 con jsmediatags
-    function loadTrackMetadata(track) {
+    // Lettore robusto dei tag ID3 tramite conversione in Blob per aggirare i limiti delle Range Request su server locali
+    async function loadTrackMetadata(track) {
       if (track.metadataLoaded) return;
-      try {
-        jsmediatags.read(track.path, {
-          onSuccess: function(tag) {
-            let updated = false;
-            if (tag.tags.title) {
-              track.displayName = tag.tags.title.toUpperCase();
-              updated = true;
-            }
-            if (tag.tags.artist) {
-              track.artist = tag.tags.artist;
-              updated = true;
-            }
-            if (tag.tags.picture) {
-              const pic = tag.tags.picture;
-              let base64String = "";
-              for (let i = 0; i < pic.data.length; i++) {
-                base64String += String.fromCharCode(pic.data[i]);
+      
+      function parseMediaTags(blobOrUrl, isBlob = false) {
+        return new Promise((resolve) => {
+          try {
+            jsmediatags.read(blobOrUrl, {
+              onSuccess: function(tag) {
+                let updated = false;
+                if (tag.tags.title) {
+                  track.displayName = tag.tags.title.toUpperCase();
+                  updated = true;
+                }
+                if (tag.tags.artist) {
+                  track.artist = tag.tags.artist;
+                  updated = true;
+                }
+                if (tag.tags.picture) {
+                  const pic = tag.tags.picture;
+                  let base64String = "";
+                  for (let i = 0; i < pic.data.length; i++) {
+                    base64String += String.fromCharCode(pic.data[i]);
+                  }
+                  const base64 = "data:" + pic.format + ";base64," + window.btoa(base64String);
+                  track.coverUrl = base64;
+                  updated = true;
+                }
+                track.metadataLoaded = true;
+                resolve(updated);
+              },
+              onError: function(error) {
+                console.warn(`jsmediatags fallito per ${track.filename} (isBlob: ${isBlob}):`, error);
+                resolve(false);
               }
-              const base64 = "data:" + pic.format + ";base64," + window.btoa(base64String);
-              track.coverUrl = base64;
-              updated = true;
-            }
-            track.metadataLoaded = true;
-
-            if (updated) {
-              // Ridisegna la playlist per riflettere le nuove informazioni
-              renderPlaylist(searchTracks.value);
-              // Se questa è la traccia attiva, aggiorna l'UI del now playing
-              if (track.id === currentIndex) {
-                updateCurrentTrackUI();
-              }
-            }
-          },
-          onError: function(error) {
-            track.metadataLoaded = true;
+            });
+          } catch (e) {
+            resolve(false);
           }
         });
+      }
+
+      // 1. Prova a scaricare il file tramite fetch (Blob) per bypassare le limitazioni di Range Request CORS dei server web locali
+      try {
+        const response = await fetch(track.path);
+        if (response.ok) {
+          const blob = await response.blob();
+          const updated = await parseMediaTags(blob, true);
+          if (updated) {
+            renderPlaylist(searchTracks.value);
+            if (track.id === currentIndex) {
+              updateCurrentTrackUI();
+            }
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn(`Fetch Blob fallito per tag MP3 di ${track.filename}, provo lettura diretta URL.`, err);
+      }
+
+      // 2. Fallback: Prova la lettura URL classica
+      try {
+        const updated = await parseMediaTags(track.path, false);
+        if (updated) {
+          renderPlaylist(searchTracks.value);
+          if (track.id === currentIndex) {
+            updateCurrentTrackUI();
+          }
+        }
       } catch (e) {
         track.metadataLoaded = true;
       }
@@ -1250,24 +1382,56 @@
       }
     }
 
+    // Calcolo traccia successiva/precedente tenendo conto dello Shuffle
+    function getNextTrackIndex() {
+      if (soundtracks.length <= 1) return 0;
+      if (isShuffle) {
+        let randomIndex = currentIndex;
+        while (randomIndex === currentIndex) {
+          randomIndex = Math.floor(Math.random() * soundtracks.length);
+        }
+        return randomIndex;
+      }
+      return (currentIndex + 1) % soundtracks.length;
+    }
+
+    function getPrevTrackIndex() {
+      if (soundtracks.length <= 1) return 0;
+      if (isShuffle) {
+        let randomIndex = currentIndex;
+        while (randomIndex === currentIndex) {
+          randomIndex = Math.floor(Math.random() * soundtracks.length);
+        }
+        return randomIndex;
+      }
+      let prevIndex = currentIndex - 1;
+      if (prevIndex < 0) prevIndex = soundtracks.length - 1;
+      return prevIndex;
+    }
+
     // Audio Navigation
     prevBtn.addEventListener('click', () => {
-      let newIndex = currentIndex - 1;
-      if (newIndex < 0) newIndex = soundtracks.length - 1;
-      selectTrack(newIndex, true);
+      selectTrack(getPrevTrackIndex(), true);
     });
 
     nextBtn.addEventListener('click', () => {
-      let newIndex = currentIndex + 1;
-      if (newIndex >= soundtracks.length) newIndex = 0;
-      selectTrack(newIndex, true);
+      selectTrack(getNextTrackIndex(), true);
+    });
+
+    shuffleBtn.addEventListener('click', () => {
+      isShuffle = !isShuffle;
+      if (isShuffle) {
+        shuffleBtn.classList.add('active');
+        shuffleBtn.title = "Disattiva Riproduzione Casuale";
+      } else {
+        shuffleBtn.classList.remove('active');
+        shuffleBtn.title = "Attiva Riproduzione Casuale";
+      }
     });
 
     // Handle end of audio track (Auto next)
     audio.addEventListener('ended', () => {
-      let newIndex = currentIndex + 1;
-      if (newIndex >= soundtracks.length) newIndex = 0;
-      selectTrack(newIndex, true);
+      selectTrack(getNextTrackIndex(), true);
     });
 
     // Time & Progress Updates
