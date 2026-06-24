@@ -737,11 +737,32 @@
       z-index: 10;
     }
 
-    .footer-highlight {
-      color: var(--yellow);
-      font-weight: 700;
+    .visualizer-bg {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      opacity: 0.0;
+      filter: blur(20px) scale(1.1);
+      transition: opacity 1s ease, background-image 1s ease;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .visualizer-bg.has-cover {
+      opacity: 0.25;
+    }
+    .track-cover-thumb {
+      width: 40px;
+      height: 40px;
+      border-radius: 4px;
+      object-fit: cover;
+      background: var(--blue-deep);
+      border: 1px solid var(--common-border);
+      flex-shrink: 0;
     }
   </style>
+  <!-- jsmediatags to extract ID3 tags and cover art -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
 </head>
 
 <body>
@@ -789,6 +810,7 @@
 
       <!-- Interactive Canvas -->
       <div class="visualizer-container">
+        <div class="visualizer-bg" id="visualizer-bg"></div>
         <canvas id="visualizer-canvas"></canvas>
         <div class="visualizer-overlay">
           <div class="telemetry-row">
@@ -805,10 +827,13 @@
 
       <!-- Controls & Metadata Console -->
       <div class="console-controls">
-        <div class="track-meta">
-          <div class="track-title-info">
-            <div class="current-track-title" id="display-title">Seleziona una soundtrack</div>
-            <div class="current-track-subtitle" id="display-filename">In attesa di inizializzazione...</div>
+        <div class="track-meta" style="flex-wrap: wrap; gap: 1rem;">
+          <div class="track-now-playing-wrapper" style="display: flex; gap: 0.85rem; align-items: center; min-width: 200px; overflow: hidden; flex: 1;">
+            <img id="now-playing-cover" src="" style="width: 52px; height: 52px; border-radius: 6px; border: 1px solid var(--common-border); object-fit: cover; display: none;" onerror="this.style.display='none'">
+            <div class="track-title-info" style="overflow: hidden;">
+              <div class="current-track-title" id="display-title">Seleziona una soundtrack</div>
+              <div class="current-track-subtitle" id="display-filename">In attesa di inizializzazione...</div>
+            </div>
           </div>
           <!-- Telemetry Bars for Bass, Mid, Treble -->
           <div class="telemetry-grid">
@@ -913,6 +938,10 @@
     let isAudioCtxInitialized = false;
     let useFallbackSim = false;
 
+    // Cache per le immagini delle copertine e riferimento per il Canvas
+    let coverImagesCache = {};
+    let currentCoverImageObj = null;
+
     // DOM Elements
     const audio = document.getElementById('audio-engine');
     const playBtn = document.getElementById('btn-play');
@@ -986,7 +1015,7 @@
         const list = await response.json();
         
         soundtracks = list.map((item, index) => {
-          // Ricava un nome gradevole dal path
+          // Ricava un nome di fallback gradevole dal path
           const filename = item.split('/').pop();
           const cleanName = filename.replace('.mp3', '').replace('soundtrack_', 'SONDAGGIO ACUSTICO #');
           return {
@@ -994,17 +1023,69 @@
             path: item,
             title: `Soundtrack ${index}`,
             displayName: `COLONNA SONORA DIGITALE #${index}`,
-            filename: filename
+            filename: filename,
+            artist: '',
+            coverUrl: null,
+            metadataLoaded: false
           };
         });
 
         renderPlaylist();
         if (soundtracks.length > 0) {
           selectTrack(0, false);
+          // Esegue la lettura asincrona e progressiva dei tag di ciascun file MP3
+          soundtracks.forEach(track => {
+            setTimeout(() => loadTrackMetadata(track), track.id * 150);
+          });
         }
       } catch (err) {
         console.error(err);
         playlistContainer.innerHTML = `<div style="text-align: center; padding: 2rem; color: var(--red);">Rilevato sabotaggio del database soundtracks.json!</div>`;
+      }
+    }
+
+    // Lettore dei tag ID3 con jsmediatags
+    function loadTrackMetadata(track) {
+      if (track.metadataLoaded) return;
+      try {
+        jsmediatags.read(track.path, {
+          onSuccess: function(tag) {
+            let updated = false;
+            if (tag.tags.title) {
+              track.displayName = tag.tags.title.toUpperCase();
+              updated = true;
+            }
+            if (tag.tags.artist) {
+              track.artist = tag.tags.artist;
+              updated = true;
+            }
+            if (tag.tags.picture) {
+              const pic = tag.tags.picture;
+              let base64String = "";
+              for (let i = 0; i < pic.data.length; i++) {
+                base64String += String.fromCharCode(pic.data[i]);
+              }
+              const base64 = "data:" + pic.format + ";base64," + window.btoa(base64String);
+              track.coverUrl = base64;
+              updated = true;
+            }
+            track.metadataLoaded = true;
+
+            if (updated) {
+              // Ridisegna la playlist per riflettere le nuove informazioni
+              renderPlaylist(searchTracks.value);
+              // Se questa è la traccia attiva, aggiorna l'UI del now playing
+              if (track.id === currentIndex) {
+                updateCurrentTrackUI();
+              }
+            }
+          },
+          onError: function(error) {
+            track.metadataLoaded = true;
+          }
+        });
+      } catch (e) {
+        track.metadataLoaded = true;
       }
     }
 
@@ -1028,10 +1109,10 @@
         item.className = `track-item ${track.id === currentIndex ? 'active' : ''} ${isPlaying && track.id === currentIndex ? 'playing' : ''}`;
         item.innerHTML = `
           <div class="track-item-info">
-            <div class="track-number">${String(track.id + 1).padStart(2, '0')}</div>
+            ${track.coverUrl ? `<img src="${track.coverUrl}" class="track-cover-thumb">` : `<div class="track-number">${String(track.id + 1).padStart(2, '0')}</div>`}
             <div class="track-details">
               <div class="track-name">${track.displayName}</div>
-              <div class="track-file-meta">${track.filename}</div>
+              <div class="track-file-meta">${track.artist ? `${track.artist} — ` : ''}${track.filename}</div>
             </div>
           </div>
           <div class="track-actions">
@@ -1055,6 +1136,41 @@
       });
     }
 
+    // Aggiorna l'interfaccia con i metadati attuali
+    function updateCurrentTrackUI() {
+      const track = soundtracks[currentIndex];
+      displayTitle.textContent = track.displayName;
+      displayFilename.textContent = track.artist ? `${track.artist.toUpperCase()} — ${track.filename}` : `FILE: ${track.filename} — RILASCIO CONFIDENZIALE`;
+
+      const vizBg = document.getElementById('visualizer-bg');
+      const nowPlayingCover = document.getElementById('now-playing-cover');
+
+      if (track.coverUrl) {
+        vizBg.style.backgroundImage = `url(${track.coverUrl})`;
+        vizBg.classList.add('has-cover');
+        nowPlayingCover.src = track.coverUrl;
+        nowPlayingCover.style.display = 'block';
+
+        if (coverImagesCache[track.id]) {
+          currentCoverImageObj = coverImagesCache[track.id];
+        } else {
+          const img = new Image();
+          img.src = track.coverUrl;
+          img.onload = () => {
+            coverImagesCache[track.id] = img;
+            if (currentIndex === track.id) {
+              currentCoverImageObj = img;
+            }
+          };
+        }
+      } else {
+        vizBg.style.backgroundImage = 'none';
+        vizBg.classList.remove('has-cover');
+        nowPlayingCover.style.display = 'none';
+        currentCoverImageObj = null;
+      }
+    }
+
     // Select track and optionally play it immediately
     function selectTrack(index, playImmediately = true) {
       if (index < 0 || index >= soundtracks.length) return;
@@ -1065,14 +1181,12 @@
       audio.src = track.path;
       audio.load();
       
-      displayTitle.textContent = track.displayName;
-      displayFilename.textContent = `FILE: ${track.filename} — RILASCIO CONFIDENZIALE`;
-
-      // Update Playlist selection UI
-      const trackItems = document.querySelectorAll('.track-item');
-      trackItems.forEach(item => item.classList.remove('active', 'playing'));
+      // Avvia lettura se non già caricata
+      loadTrackMetadata(track);
       
-      // We search and highlight the element based on list
+      updateCurrentTrackUI();
+
+      // Aggiorna Playlist UI
       renderPlaylist(searchTracks.value);
 
       if (playImmediately) {
@@ -1497,6 +1611,16 @@
         ctx.beginPath();
         ctx.arc(centerX, centerY, radius * 1.6, 0, Math.PI * 2);
         ctx.fill();
+
+        // Draw Cover Art in the center of the orbit if loaded
+        if (currentCoverImageObj) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, radius * 0.62, 0, Math.PI * 2);
+          ctx.clip();
+          ctx.drawImage(currentCoverImageObj, centerX - radius * 0.62, centerY - radius * 0.62, radius * 1.24, radius * 1.24);
+          ctx.restore();
+        }
 
         // Draw orbital particle points
         ctx.beginPath();
