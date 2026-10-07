@@ -1880,55 +1880,66 @@
         ctx.setLineDash([]); // reset
 
       } else if (activeMode === 'terrain') {
-        // Campo di Battaglia 3D (Mappa topografica di terreno alieno wireframe)
-        const rows = 16;
+        // Campo di Battaglia 3D (Volo radente su terreno alieno wireframe)
+        const rows = 20;
         const cols = 28;
-        const gridWidth = width * 1.3;
-        const gridHeight = height * 0.9;
+        const gridWidth = width * 1.5;
+        const gridHeight = height * 1.1;
         
         const originX = width / 2;
-        const originY = height * 0.42; // Prospettiva rialzata
+        const originY = height * 0.65; // Abbassato il punto d'origine per liberare l'alto
         const cellW = gridWidth / cols;
         const cellH = gridHeight / rows;
         
-        const tilt = 0.55; // Prospettiva isometrica inclinata
+        const tilt = 0.50; // Prospettiva isometrica leggermente inclinata
         const bassImpact = (bass / 255);
         
-        // Calcolo e disegno linee orizzontali e verticali 3D
+        // Offset di scorrimento in avanti (volo radente continuo verso l'utente)
+        // La velocità di avanzamento aumenta durante i beat dei bassi
+        const terrainSpeed = 0.04 + bassImpact * 0.08;
+        if (!window.terrainOffset) window.terrainOffset = 0;
+        window.terrainOffset += terrainSpeed;
+        const scrollOffset = window.terrainOffset;
+        
         ctx.lineWidth = 1.2;
         
-        // Griglia di punti 3D trasformati in prospettiva 2D
+        // Griglia di punti 3D trasformati in prospettiva 2D con scorrimento continuo
         const points = [];
         for (let r = 0; r <= rows; r++) {
           points[r] = [];
-          const rowRatio = r / rows;
-          const zScale = 0.35 + rowRatio * 0.75; // Prospettiva di profondità
+          
+          // Applico lo scorrimento continuo sulla coordinata della riga
+          const virtualR = r - (scrollOffset % 1);
+          const rowRatio = virtualR / rows;
+          const zScale = 0.2 + rowRatio * 0.8; // Prospettiva di profondità radente
           
           for (let c = 0; c <= cols; c++) {
-            const colRatio = c / cols;
-            // Distanza dal centro per sagomare il terreno a "valle/montagna"
             const distFromCenter = Math.abs(c - cols / 2) / (cols / 2);
             
-            // Mappatura frequenze audio sul grigliato
-            const freqIdx = Math.floor(( (r * cols + c) / (rows * cols) ) * dataArray.length * 0.85);
+            // Per generare il terreno infinito scorrevole basato su Noise/Sinusoidi fisse
+            const globalR = Math.floor(scrollOffset) + r;
+            const noiseFactor = Math.sin(globalR * 0.45 + c * 0.3) * Math.cos(c * 0.4 - globalR * 0.2);
+            
+            // Frequenza audio abbinata all'indice della griglia
+            const freqIdx = Math.floor((( (r * cols + c) / (rows * cols) )) * dataArray.length * 0.85);
             const rawVal = dataArray[freqIdx] || 0;
             
-            // Elevazione dinamica: i bassi spingono il centro, gli alti le vette laterali
-            let elevation = (rawVal / 255) * 65 * zScale;
-            elevation += Math.sin(simPhase * 2 + r * 0.3 + c * 0.2) * (5 + bassImpact * 10);
+            // Elevazione: rumore del terreno terreno + picco dinamico audio + spinta bassi al centro
+            let elevation = (rawVal / 255) * 55 * zScale;
+            elevation += Math.abs(noiseFactor) * 35 * zScale;
             
-            if (distFromCenter < 0.3) {
-              elevation += bassImpact * 35 * zScale; // picco centrale sui beat dei bassi
+            if (distFromCenter < 0.35) {
+              elevation += bassImpact * 40 * zScale;
             }
             
             // Posizionamento in prospettiva
             const worldX = (c - cols / 2) * cellW * zScale;
-            const worldY = (r - rows / 2) * cellH * tilt;
+            const worldY = (virtualR - rows / 2) * cellH * tilt;
             
             const screenX = originX + worldX;
             const screenY = originY + worldY - elevation;
             
-            points[r][c] = { x: screenX, y: screenY, elevation: elevation, zScale: zScale };
+            points[r][c] = { x: screenX, y: screenY, elevation: elevation, zScale: zScale, rRatio: rowRatio };
           }
         }
 
@@ -1940,20 +1951,22 @@
             if (c === 0) ctx.moveTo(p.x, p.y);
             else ctx.lineTo(p.x, p.y);
           }
-          // Gradiente colore basato su altitudine e frequenza (Giallo Super Terra / Verde Tattico)
+          
           const avgElev = points[r][Math.floor(cols / 2)].elevation;
-          const alpha = 0.25 + (r / rows) * 0.6;
-          if (avgElev > 35) {
-            ctx.strokeStyle = `rgba(245, 196, 0, ${alpha})`; // Giallo ambra per picchi alti
-          } else if (avgElev > 15) {
-            ctx.strokeStyle = `rgba(57, 255, 20, ${alpha * 0.85})`; // Verde neon per colline
+          // Dissolvenza all'orizzonte (parte posteriore della griglia)
+          const fadeFar = Math.max(0, Math.min(1, (r / rows) * 1.5 - 0.2));
+          
+          if (avgElev > 40) {
+            ctx.strokeStyle = `rgba(245, 196, 0, ${fadeFar * 0.9})`; // Giallo ambra per picchi alti
+          } else if (avgElev > 20) {
+            ctx.strokeStyle = `rgba(57, 255, 20, ${fadeFar * 0.75})`; // Verde neon per colline
           } else {
-            ctx.strokeStyle = `rgba(0, 229, 255, ${alpha * 0.5})`; // Neon cyan per valli
+            ctx.strokeStyle = `rgba(0, 229, 255, ${fadeFar * 0.5})`; // Neon cyan per valli
           }
           ctx.stroke();
         }
 
-        // 2. Disegno linee verticali
+        // 2. Disegno linee verticali (longitudinali di volo)
         for (let c = 0; c <= cols; c++) {
           ctx.beginPath();
           for (let r = 0; r <= rows; r++) {
@@ -1961,19 +1974,21 @@
             if (r === 0) ctx.moveTo(p.x, p.y);
             else ctx.lineTo(p.x, p.y);
           }
-          const alpha = 0.15 + (Math.abs(c - cols / 2) / (cols / 2)) * 0.35;
+          const alpha = 0.12 + (Math.abs(c - cols / 2) / (cols / 2)) * 0.3;
           ctx.strokeStyle = `rgba(100, 160, 255, ${alpha})`;
           ctx.stroke();
         }
 
-        // 3. Onde d'urto sonar/radar che spazzano il terreno
-        const scanY = originY - (rows / 2) * cellH * tilt + ((simPhase * 40) % (gridHeight * tilt));
-        ctx.strokeStyle = 'rgba(245, 196, 0, 0.4)';
-        ctx.lineWidth = 2;
+        // 3. Linea dell'orizzonte tattico
+        const horizonY = originY - (rows / 2) * cellH * tilt;
+        ctx.strokeStyle = 'rgba(245, 196, 0, 0.3)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 8]);
         ctx.beginPath();
-        ctx.moveTo(originX - gridWidth * 0.5, scanY);
-        ctx.lineTo(originX + gridWidth * 0.5, scanY);
+        ctx.moveTo(0, horizonY);
+        ctx.lineTo(width, horizonY);
         ctx.stroke();
+        ctx.setLineDash([]); // reset
       }
     }
 
