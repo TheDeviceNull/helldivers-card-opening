@@ -1551,13 +1551,14 @@
       const isRare = ['rare', 'elite', 'legendary', 'rara', 'leggendaria'].includes(card.rarity.toLowerCase());
       el.className = `card ${isRare ? 'rare' : 'common'} ${isOwned ? '' : 'locked'}`;
 
-      let imgUrl = `${API_BASE_URL}/collection-card-image?file=${encodeURIComponent(card.id)}&s=${encodeURIComponent(userSessionToken || '')}`;
-
+      // Usa s=${userSessionToken} o t=${currentToken} per autenticare la risorsa immagine
+      const tokenParam = userSessionToken ? `s=${encodeURIComponent(userSessionToken)}` : (currentToken ? `t=${encodeURIComponent(currentToken)}` : '');
+      const imgUrl = `${API_BASE_URL}/collection-card-image?file=${encodeURIComponent(card.id)}&${tokenParam}`;
 
       el.innerHTML = `
         ${copies > 1 ? `<span class="copies-badge">x${copies}</span>` : ''}
         <div class="card-img-wrapper">
-          ${isOwned ? `<img src="${imgUrl}" alt="${card.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : ''}
+          ${isOwned ? `<img src="${imgUrl}" alt="${card.name}" crossorigin="anonymous" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : ''}
           <div class="card-placeholder" ${isOwned ? 'style="display:none"' : ''}>
             <div class="card-number">${card.num || '000'}</div>
             <div class="card-codename">${card.name}</div>
@@ -1572,8 +1573,9 @@
         </div>
       `;
 
-      // Effetto 3D Mouse Move - Solo per carte possedute e non touch
+      // Interattività per carte possedute
       if (isOwned) {
+        // Desktop Mouse Hover (3D)
         el.addEventListener('mousemove', (e) => {
           if (window.matchMedia("(pointer: coarse)").matches) return;
           const rect = el.getBoundingClientRect();
@@ -1589,10 +1591,21 @@
         el.addEventListener('mouseleave', () => {
           el.style.transform = '';
         });
+
+        // Mobile/Tablet Touch (Tap to Zoom)
+        el.addEventListener('click', (e) => {
+          if (!window.matchMedia("(pointer: coarse)").matches) return;
+          const isAlreadyActive = el.classList.contains('active-mobile');
+          document.querySelectorAll('.card.active-mobile').forEach(c => c.classList.remove('active-mobile'));
+          if (!isAlreadyActive) {
+            el.classList.add('active-mobile');
+          }
+        });
       }
 
       return el;
     }
+
 
 
     async function validateToken(token) {
