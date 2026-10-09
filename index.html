@@ -1538,8 +1538,8 @@
       const isRare = ['rare', 'elite', 'legendary', 'rara', 'leggendaria'].includes(card.rarity.toLowerCase());
       el.className = `card ${isRare ? 'rare' : 'common'} ${isOwned ? '' : 'locked'}`;
 
-      let imgUrl = `${API_BASE_URL}/collection-card-image?file=${encodeURIComponent(card.id)}`;
-      let authHeaderVal = userSessionToken ? `Bearer ${userSessionToken}` : '';
+      let imgUrl = `${API_BASE_URL}/collection-card-image?file=${encodeURIComponent(card.id)}&s=${encodeURIComponent(userSessionToken || '')}`;
+
 
       el.innerHTML = `
         ${copies > 1 ? `<span class="copies-badge">x${copies}</span>` : ''}
