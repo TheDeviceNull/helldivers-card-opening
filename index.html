@@ -762,10 +762,250 @@
     #volume-slider:hover {
       opacity: 1;
     }
+
+    /* ===== HEADER NAVIGAZIONE & DISCORD OAUTH ===== */
+    .top-nav-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: rgba(8, 15, 28, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(245, 196, 0, 0.2);
+      z-index: 900;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.5rem;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 900;
+      color: var(--yellow);
+      font-size: 1.1rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .nav-brand img {
+      width: 28px;
+      height: 28px;
+    }
+
+    .nav-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-right: 140px;
+      /* spazio per audio control */
+    }
+
+    .btn-nav-action {
+      background: rgba(245, 196, 0, 0.08);
+      border: 1px solid rgba(245, 196, 0, 0.4);
+      color: var(--yellow);
+      padding: 6px 14px;
+      border-radius: 4px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      font-size: 0.85rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-nav-action:hover {
+      background: var(--yellow);
+      color: var(--darker);
+      box-shadow: 0 0 15px rgba(245, 196, 0, 0.3);
+    }
+
+    .btn-discord-login {
+      background: #5865F2;
+      border: none;
+      color: white;
+    }
+
+    .btn-discord-login:hover {
+      background: #4752C4;
+      color: white;
+      box-shadow: 0 0 15px rgba(88, 101, 242, 0.5);
+    }
+
+    .user-profile-badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+
+    .user-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1px solid var(--yellow);
+    }
+
+    .user-name {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--text);
+      letter-spacing: 0.05em;
+    }
+
+    /* ===== SCHERMATA COLLEZIONE ===== */
+    #screen-collection {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+      z-index: 1;
+      padding: 6rem 1rem 4rem 1rem;
+      width: 100%;
+      max-width: 1100px;
+    }
+
+    .collection-header {
+      text-align: center;
+      width: 100%;
+    }
+
+    .collection-stats-bar {
+      display: flex;
+      gap: 1.5rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+
+    .stat-card {
+      background: rgba(13, 31, 60, 0.6);
+      border: 1px solid rgba(245, 196, 0, 0.3);
+      padding: 10px 20px;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 130px;
+    }
+
+    .stat-val {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 900;
+      font-size: 1.6rem;
+      color: var(--yellow);
+    }
+
+    .stat-lbl {
+      font-size: 0.65rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .collection-filters {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .filter-btn {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--muted);
+      padding: 6px 14px;
+      border-radius: 4px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      font-size: 0.8rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-btn.active,
+    .filter-btn:hover {
+      border-color: var(--yellow);
+      color: var(--yellow);
+      background: rgba(245, 196, 0, 0.1);
+    }
+
+    /* Carte Non Possedute (Silhouette) */
+    .card.locked {
+      filter: grayscale(1) brightness(0.25);
+      opacity: 0.45;
+      border-color: rgba(255, 255, 255, 0.1) !important;
+      box-shadow: none !important;
+    }
+
+    .card.locked:hover {
+      filter: grayscale(0.7) brightness(0.5) !important;
+      opacity: 0.8;
+    }
+
+    .copies-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: var(--yellow);
+      color: var(--darker);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 900;
+      font-size: 0.75rem;
+      padding: 2px 7px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+      z-index: 5;
+    }
   </style>
 </head>
 
 <body>
+
+  <!-- Header Navigazione Super Terra -->
+  <header class="top-nav-bar">
+    <div class="nav-brand">
+      <img src="./assets/superearth.png" alt="Super Earth Logo">
+      <span>Archivio Carte Super Terra</span>
+    </div>
+    <div class="nav-controls">
+      <button class="btn-nav-action" id="btn-show-intro" onclick="switchView('intro')" style="display:none;">
+        ✉️ Riscatta Pacchetto
+      </button>
+      <button class="btn-nav-action" id="btn-show-collection" onclick="switchView('collection')">
+        🗂️ La Mia Collezione
+      </button>
+      <div id="auth-container">
+        <button class="btn-nav-action btn-discord-login" onclick="loginWithDiscord()">
+          <svg style="width:16px; height:16px; fill:currentColor;" viewBox="0 0 127.14 96.36">
+            <path
+              d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.71,32.65-1.82,56.6.39,80.21a105.73,105.73,0,0,0,32.27,16.15,77.7,77.7,0,0,0,7.39-12,67.65,67.65,0,0,1-11.9-5.69c.9-.66,1.81-1.34,2.66-2a75.6,75.6,0,0,0,65.71,0c.85.71,1.75,1.39,2.66,2a67.41,67.41,0,0,1-11.9,5.69,77.67,77.67,0,0,0,7.39,12,106.06,106.06,0,0,0,32.27-16.15C130.2,49.88,126.6,26.24,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z" />
+          </svg>
+          Login Discord
+        </button>
+      </div>
+    </div>
+  </header>
 
   <!-- Audio Engine -->
   <audio id="bg-music">
@@ -779,8 +1019,11 @@
           d="M14,3.23V5.29C16.89,6.15 19,8.83 19,12C19,15.17 16.89,17.85 14,18.71V20.77C18,19.86 21,16.28 21,12C21,7.72 18,4.14 14,3.23M16.5,12C16.5,10.23 15.5,8.71 14,7.97V16.02C15.5,15.29 16.5,13.77 16.5,12M3,9V15H7L12,20V4L7,9H3Z" />
       </svg>
     </div>
-    <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.75" oninput="changeVolume(this.value)" title="Volume">
-    <a href="player.html" title="Consolle Audio Avanzata" style="color: var(--yellow); text-decoration: none; font-family: 'Barlow Condensed', sans-serif; font-size: 0.75rem; letter-spacing: 0.05em; text-transform: uppercase; border: 1px solid rgba(245,196,0,0.3); padding: 4px 8px; border-radius: 4px; background: rgba(0,0,0,0.4); margin-top: 5px; transition: all 0.2s;" onmouseover="this.style.background='rgba(245,196,0,0.1)'" onmouseout="this.style.background='rgba(0,0,0,0.4)'">
+    <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.75" oninput="changeVolume(this.value)"
+      title="Volume">
+    <a href="player.html" title="Consolle Audio Avanzata"
+      style="color: var(--yellow); text-decoration: none; font-family: 'Barlow Condensed', sans-serif; font-size: 0.75rem; letter-spacing: 0.05em; text-transform: uppercase; border: 1px solid rgba(245,196,0,0.3); padding: 4px 8px; border-radius: 4px; background: rgba(0,0,0,0.4); margin-top: 5px; transition: all 0.2s;"
+      onmouseover="this.style.background='rgba(245,196,0,0.1)'" onmouseout="this.style.background='rgba(0,0,0,0.4)'">
       Player ♫
     </a>
   </div>
@@ -843,9 +1086,44 @@
       <span class="timer-text">Disponibili per</span>
       <span class="timer-countdown" id="timer-display">59:59</span>
     </div>
-
-
   </div>
+
+  <!-- SCHERMATA 4: La Mia Collezione -->
+  <div id="screen-collection">
+    <div class="collection-header">
+      <h1 class="intro-title"><span>Ministero della Verità</span>La Mia Collezione</h1>
+      <p class="intro-subtitle" id="collection-user-sub">Effettua il login per visualizzare l'archivio personale</p>
+
+      <div class="collection-stats-bar" id="collection-stats">
+        <div class="stat-card">
+          <span class="stat-val" id="stat-total-owned">0</span>
+          <span class="stat-lbl">Carte Totali</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-val" id="stat-unique-owned">0 / 0</span>
+          <span class="stat-lbl">Album Sbloccato</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-val" id="stat-completion">0%</span>
+          <span class="stat-lbl">Completamento</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="collection-filters">
+      <button class="filter-btn active" onclick="setCollectionFilter('all', this)">Tutte</button>
+      <button class="filter-btn" onclick="setCollectionFilter('owned', this)">Possedute</button>
+      <button class="filter-btn" onclick="setCollectionFilter('missing', this)">Mancanti</button>
+      <button class="filter-btn" onclick="setCollectionFilter('series-EDST', this)">EDST</button>
+      <button class="filter-btn" onclick="setCollectionFilter('series-INDD', this)">INDD</button>
+      <button class="filter-btn" onclick="setCollectionFilter('rarity-rara', this)">Rare / Elite / Leggendarie</button>
+    </div>
+
+    <div class="cards-grid" id="collection-grid">
+      <!-- Popolato da JS -->
+    </div>
+  </div>
+
 
   <div class="discord-community">
     <span class="community-text">Unisciti alla Community Italiana</span>
@@ -1035,19 +1313,254 @@
       }
     }
 
+    // Configurazione Discord OAuth2
+    const DISCORD_CLIENT_ID = '1476235147459170434'; // Sostituire con il proprio Client ID Discord reale
+    const DISCORD_REDIRECT_URI = window.location.origin + window.location.pathname;
+
+    let userSessionToken = localStorage.getItem('hd2_session_token') || null;
+    let currentUserProfile = null;
+    let allCatalogCards = [];
+    let userOwnedCollection = [];
+    let currentCollectionFilter = 'all';
+
     // ===== INIZIALIZZAZIONE =====
     window.addEventListener('DOMContentLoaded', async () => {
       const urlParams = new URLSearchParams(window.location.search);
       currentToken = urlParams.get('t');
+      const oauthCode = urlParams.get('code');
 
-      if (!currentToken) {
-        showError("Nessun token di autorizzazione trovato. Torna al fronte, soldato.");
-        return;
+      // 1. Gestione callback OAuth2 se presente nell'URL
+      if (oauthCode) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        await handleOAuthCallback(oauthCode);
+      } else if (userSessionToken) {
+        await fetchUserProfileAndCollection();
       }
 
-      await validateToken(currentToken);
+      updateAuthUI();
+
+      // 2. Se è presente un token di apertura bustina
+      if (currentToken) {
+        document.getElementById('btn-show-intro').style.display = 'inline-flex';
+        switchView('intro');
+        await validateToken(currentToken);
+      } else {
+        // Se non c'è token bustina, vai alla collezione
+        switchView('collection');
+      }
     });
 
+    // ===== GESTIONE VISTE SPA =====
+    function switchView(viewName) {
+      document.getElementById('screen-intro').style.display = 'none';
+      document.getElementById('screen-opening').style.display = 'none';
+      document.getElementById('screen-cards').style.display = 'none';
+      document.getElementById('screen-loading').style.display = 'none';
+      document.getElementById('screen-error').style.display = 'none';
+      document.getElementById('screen-collection').style.display = 'none';
+
+      if (viewName === 'intro') {
+        document.getElementById('screen-intro').style.display = 'flex';
+      } else if (viewName === 'collection') {
+        document.getElementById('screen-collection').style.display = 'flex';
+        loadCollectionData();
+      }
+    }
+
+    // ===== DISCORD OAUTH2 FLUSSO =====
+    function loginWithDiscord() {
+      const scope = encodeURIComponent('identify');
+      const redirectUri = encodeURIComponent(DISCORD_REDIRECT_URI);
+      const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&response_type=code&redirect_uri=${redirectUri}&scope=${scope}`;
+      window.location.href = authUrl;
+    }
+
+    async function handleOAuthCallback(code) {
+      showLoading(true);
+      try {
+        const resp = await fetch(`${API_BASE_URL}/auth/discord`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: code, redirect_uri: DISCORD_REDIRECT_URI })
+        });
+        const data = await resp.json();
+        if (resp.ok && data.session_token) {
+          userSessionToken = data.session_token;
+          localStorage.setItem('hd2_session_token', userSessionToken);
+          currentUserProfile = data.user;
+          await fetchUserProfileAndCollection();
+        } else {
+          console.error("Autenticazione fallita:", data);
+        }
+      } catch (err) {
+        console.error("Errore OAuth callback:", err);
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    async function fetchUserProfileAndCollection() {
+      if (!userSessionToken) return;
+      try {
+        const resp = await fetch(`${API_BASE_URL}/user-collection`, {
+          headers: { 'Authorization': `Bearer ${userSessionToken}` }
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          currentUserProfile = data.user;
+          userOwnedCollection = data.cards;
+          updateAuthUI();
+          renderCollectionGrid();
+        } else if (resp.status === 401) {
+          logoutDiscord();
+        }
+      } catch (e) {
+        console.warn("Impossibile recuperare la collezione utente:", e);
+      }
+    }
+
+    function logoutDiscord() {
+      userSessionToken = null;
+      currentUserProfile = null;
+      userOwnedCollection = [];
+      localStorage.removeItem('hd2_session_token');
+      updateAuthUI();
+      renderCollectionGrid();
+    }
+
+    function updateAuthUI() {
+      const container = document.getElementById('auth-container');
+      if (currentUserProfile) {
+        const avatarUrl = currentUserProfile.avatar
+          ? `https://cdn.discordapp.com/avatars/${currentUserProfile.id}/${currentUserProfile.avatar}.png`
+          : `./assets/superearth.png`;
+        container.innerHTML = `
+          <div class="user-profile-badge">
+            <img class="user-avatar" src="${avatarUrl}" alt="${currentUserProfile.username}">
+            <span class="user-name">${currentUserProfile.global_name || currentUserProfile.username}</span>
+            <button onclick="logoutDiscord()" style="background:none; border:none; color:var(--muted); cursor:pointer; font-size:0.75rem; margin-left:4px;" title="Disconnetti">✕</button>
+          </div>
+        `;
+        document.getElementById('collection-user-sub').textContent = `Agente ${currentUserProfile.global_name || currentUserProfile.username} — Archivio Sbloccato`;
+      } else {
+        container.innerHTML = `
+          <button class="btn-nav-action btn-discord-login" onclick="loginWithDiscord()">
+            <svg style="width:16px; height:16px; fill:currentColor;" viewBox="0 0 127.14 96.36">
+              <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.71,32.65-1.82,56.6.39,80.21a105.73,105.73,0,0,0,32.27,16.15,77.7,77.7,0,0,0,7.39-12,67.65,67.65,0,0,1-11.9-5.69c.9-.66,1.81-1.34,2.66-2a75.6,75.6,0,0,0,65.71,0c.85.71,1.75,1.39,2.66,2a67.41,67.41,0,0,1-11.9,5.69,77.67,77.67,0,0,0,7.39,12,106.06,106.06,0,0,0,32.27-16.15C130.2,49.88,126.6,26.24,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z"/>
+            </svg>
+            Login Discord
+          </button>
+        `;
+        document.getElementById('collection-user-sub').textContent = `Effettua il login per visualizzare l'archivio personale`;
+      }
+    }
+
+    // ===== GESTIONE COLLEZIONE & ALBUM =====
+    async function loadCollectionData() {
+      if (allCatalogCards.length === 0) {
+        try {
+          const resp = await fetch(`${API_BASE_URL}/all-cards`);
+          if (resp.ok) {
+            const data = await resp.json();
+            allCatalogCards = data.cards;
+          }
+        } catch (e) {
+          console.warn("Impossibile caricare il catalogo carte completo:", e);
+        }
+      }
+      if (userSessionToken) {
+        await fetchUserProfileAndCollection();
+      } else {
+        renderCollectionGrid();
+      }
+    }
+
+    function setCollectionFilter(filterType, btnEl) {
+      currentCollectionFilter = filterType;
+      document.querySelectorAll('.collection-filters .filter-btn').forEach(b => b.classList.remove('active'));
+      if (btnEl) btnEl.classList.add('active');
+      renderCollectionGrid();
+    }
+
+    function renderCollectionGrid() {
+      const grid = document.getElementById('collection-grid');
+      grid.innerHTML = '';
+
+      const ownedMap = {};
+      userOwnedCollection.forEach(c => {
+        ownedMap[c.card_id] = c;
+      });
+
+      const totalOwnedCount = userOwnedCollection.reduce((sum, c) => sum + (c.copies || 1), 0);
+      const uniqueOwnedCount = Object.keys(ownedMap).length;
+      const totalCatalogCount = allCatalogCards.length || 1;
+      const completionPercent = Math.round((uniqueOwnedCount / totalCatalogCount) * 100);
+
+      document.getElementById('stat-total-owned').textContent = totalOwnedCount;
+      document.getElementById('stat-unique-owned').textContent = `${uniqueOwnedCount} / ${totalCatalogCount}`;
+      document.getElementById('stat-completion').textContent = `${completionPercent}%`;
+
+      let cardsToDisplay = allCatalogCards.length > 0 ? allCatalogCards : userOwnedCollection.map(c => ({
+        id: c.card_id,
+        name: c.card_name,
+        rarity: c.rarity,
+        series: c.series,
+        num: c.card_id.split('-')[0]
+      }));
+
+      // Filtro
+      cardsToDisplay = cardsToDisplay.filter(card => {
+        const isOwned = !!ownedMap[card.id];
+        if (currentCollectionFilter === 'owned') return isOwned;
+        if (currentCollectionFilter === 'missing') return !isOwned;
+        if (currentCollectionFilter.startsWith('series-')) {
+          const targetSeries = currentCollectionFilter.replace('series-', '');
+          return card.series === targetSeries;
+        }
+        if (currentCollectionFilter === 'rarity-rara') {
+          return ['rare', 'rara', 'elite', 'legendary', 'leggendaria'].includes(card.rarity.toLowerCase());
+        }
+        return true;
+      });
+
+      cardsToDisplay.forEach(card => {
+        const ownedData = ownedMap[card.id];
+        const isOwned = !!ownedData;
+        const copies = ownedData ? (ownedData.copies || 1) : 0;
+
+        const cardEl = buildCollectionCardElement(card, isOwned, copies);
+        grid.appendChild(cardEl);
+      });
+    }
+
+    function buildCollectionCardElement(card, isOwned, copies) {
+      const el = document.createElement('div');
+      const isRare = ['rare', 'elite', 'legendary', 'rara', 'leggendaria'].includes(card.rarity.toLowerCase());
+      el.className = `card ${isRare ? 'rare' : 'common'} ${isOwned ? '' : 'locked'}`;
+
+      let imgUrl = `${API_BASE_URL}/collection-card-image?file=${encodeURIComponent(card.id)}`;
+      let authHeaderVal = userSessionToken ? `Bearer ${userSessionToken}` : '';
+
+      el.innerHTML = `
+        ${copies > 1 ? `<span class="copies-badge">x${copies}</span>` : ''}
+        <div class="card-img-wrapper">
+          <img src="${imgUrl}" alt="${card.name}" ${!isOwned ? 'style="filter: grayscale(1) brightness(0.2);"' : ''} onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <div class="card-placeholder" style="display:none">
+            <div class="card-number">${card.num || '000'}</div>
+            <div class="card-codename">${card.name}</div>
+          </div>
+          ${isRare && isOwned ? '<div class="rare-shimmer"></div>' : ''}
+        </div>
+        <div class="card-footer">
+          <div class="card-info-group">
+            <span class="card-name">${card.name}</span>
+            <span class="rarity-badge badge-${isRare ? 'rara' : 'comune'}">${card.rarity.toUpperCase()}</span>
+          </div>
+        </div>
+      `;
+
+      return el;
+    }
 
     async function validateToken(token) {
       showLoading(true);
@@ -1059,9 +1572,6 @@
           // data.cards è un array di stringhe tipo ["001-rarita-serie-nome", ...]
           SELECTED_CARDS = data.cards.map(cardId => {
             const parts = cardId.split('-');
-            // Supporto flessibile per 3 o 4 parti
-            // 3 parti: id-nome-rarita
-            // 4 parti: id-rarita-serie-nome
             if (parts.length === 3) {
               return {
                 id: cardId,
@@ -1083,7 +1593,6 @@
             }
           });
 
-          // Determina la serie dominante per la busta
           const seriesCounts = {};
           SELECTED_CARDS.forEach(c => {
             seriesCounts[c.series] = (seriesCounts[c.series] || 0) + 1;
@@ -1131,7 +1640,6 @@
 
       cardsScreen.style.display = 'flex';
 
-      // Ordina: comuni prime, rara ultima
       const rarityOrder = { 'core': 0, 'comune': 0, 'rare': 1, 'rara': 1, 'elite': 2, 'legendary': 3, 'leggendaria': 3 };
       const sorted = [...SELECTED_CARDS].sort((a, b) =>
         (rarityOrder[a.rarity] || 0) - (rarityOrder[b.rarity] || 0)
@@ -1141,7 +1649,6 @@
         const el = buildCard(card);
         grid.appendChild(el);
 
-        // Reveal con delay progressivo
         setTimeout(() => {
           el.classList.add('reveal');
           if (card.rarity === 'rara') {
@@ -1150,7 +1657,6 @@
         }, 100 + i * 120);
       });
 
-      // Avvia timer
       startTimer();
     }
 
@@ -1168,7 +1674,6 @@
           </div>
         `;
       } else {
-        // URL autenticata: le immagini non sono mai esposte pubblicamente
         const imgUrl = `${API_BASE_URL}/card-image?t=${currentToken}&file=${encodeURIComponent(card.id)}`;
         cardContent = `
           <img src="${imgUrl}" alt="${card.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
@@ -1219,9 +1724,8 @@
         };
       }
 
-      // Effetto 3D Mouse Move - Solo se non è un dispositivo touch
       el.addEventListener('mousemove', (e) => {
-        if (window.matchMedia("(pointer: coarse)").matches) return; // Salta se touch
+        if (window.matchMedia("(pointer: coarse)").matches) return;
         if (card.isMock) return;
         const rect = el.getBoundingClientRect();
         const x = e.clientX - rect.left;
@@ -1242,7 +1746,6 @@
 
     // ===== TIMER =====
     function startTimer() {
-      // Fissiamo il momento esatto della scadenza (1 ora da adesso)
       const expirationTimestamp = Date.now() + (60 * 60 * 1000);
 
       const updateFunc = () => {
@@ -1256,20 +1759,18 @@
           return;
         }
 
-        // Convertiamo la differenza millisecondi in minuti/secondi reali
         const totalSeconds = Math.ceil(diff / 1000);
         const m = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
         const s = String(totalSeconds % 60).padStart(2, '0');
 
         document.getElementById('timer-display').textContent = `${m}:${s}`;
 
-        // Allerta rossa sotto i 5 minuti (300 secondi)
         if (totalSeconds < 300) {
           document.getElementById('timer-display').style.color = '#C0281C';
         }
       };
 
-      updateFunc(); // Primo aggiornamento istantaneo
+      updateFunc();
       timerInterval = setInterval(updateFunc, 1000);
     }
 
@@ -1281,8 +1782,6 @@
       document.querySelector('.cards-header p').textContent = 'Tempo scaduto. Le carte non sono più disponibili.';
       document.getElementById('timer-display').textContent = '00:00';
     }
-
-
   </script>
 </body>
 
