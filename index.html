@@ -1570,13 +1570,13 @@
 
           <div class="card-placeholder" ${isOwned ? 'style="display:none"' : ''}>
             <div class="card-number">${card.num || '000'}</div>
-            <div class="card-codename">${card.name}</div>
+            ${isOwned ? `<div class="card-codename">${card.name}</div>` : ''}
           </div>
           ${isRare && isOwned ? '<div class="rare-shimmer"></div>' : ''}
         </div>
         <div class="card-footer">
           <div class="card-info-group">
-            <span class="card-name">${card.name}</span>
+            <span class="card-name">${isOwned ? card.name : '???'}</span>
             <span class="rarity-badge badge-${isRare ? 'rara' : 'comune'}">${card.rarity.toUpperCase()}</span>
           </div>
         </div>
