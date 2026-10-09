@@ -950,18 +950,31 @@
       background: rgba(245, 196, 0, 0.1);
     }
 
-    /* Carte Non Possedute (Silhouette) */
+    /* Carte Non Possedute (Album Sblocco) */
     .card.locked {
-      filter: grayscale(1) brightness(0.25);
-      opacity: 0.45;
-      border-color: rgba(255, 255, 255, 0.1) !important;
+      opacity: 0.5;
+      border-color: rgba(255, 255, 255, 0.08) !important;
       box-shadow: none !important;
+      cursor: not-allowed;
     }
 
-    .card.locked:hover {
-      filter: grayscale(0.7) brightness(0.5) !important;
-      opacity: 0.8;
+    .card.locked .card-img-wrapper img {
+      display: none !important; /* Nasconde totalmente l'immagine della carta non posseduta */
     }
+
+    .card.locked .card-placeholder {
+      display: flex !important;
+      opacity: 0.25;
+    }
+
+    @media (hover: hover) {
+      .card.locked:hover {
+        transform: none !important; /* Disabilita ingrandimento su hover per le carte bloccate */
+        box-shadow: none !important;
+        z-index: 1;
+      }
+    }
+
 
     .copies-badge {
       position: absolute;
@@ -1544,8 +1557,8 @@
       el.innerHTML = `
         ${copies > 1 ? `<span class="copies-badge">x${copies}</span>` : ''}
         <div class="card-img-wrapper">
-          <img src="${imgUrl}" alt="${card.name}" ${!isOwned ? 'style="filter: grayscale(1) brightness(0.2);"' : ''} onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-          <div class="card-placeholder" style="display:none">
+          ${isOwned ? `<img src="${imgUrl}" alt="${card.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : ''}
+          <div class="card-placeholder" ${isOwned ? 'style="display:none"' : ''}>
             <div class="card-number">${card.num || '000'}</div>
             <div class="card-codename">${card.name}</div>
           </div>
@@ -1559,8 +1572,28 @@
         </div>
       `;
 
+      // Effetto 3D Mouse Move - Solo per carte possedute e non touch
+      if (isOwned) {
+        el.addEventListener('mousemove', (e) => {
+          if (window.matchMedia("(pointer: coarse)").matches) return;
+          const rect = el.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          const xc = rect.width / 2;
+          const yc = rect.height / 2;
+          const dx = x - xc;
+          const dy = y - yc;
+          el.style.transform = `scale(2.1) translateY(5%) rotateY(${dx / 12}deg) rotateX(${-dy / 12}deg)`;
+        });
+
+        el.addEventListener('mouseleave', () => {
+          el.style.transform = '';
+        });
+      }
+
       return el;
     }
+
 
     async function validateToken(token) {
       showLoading(true);
