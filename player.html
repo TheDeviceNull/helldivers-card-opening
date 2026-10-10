@@ -1880,14 +1880,14 @@
         ctx.setLineDash([]); // reset
 
       } else if (activeMode === 'terrain') {
-        // Campo di Battaglia 3D (Volo radente su terreno alieno wireframe con picchi montuosi accentuati)
+        // Campo di Battaglia 3D (Volo radente su terreno alieno wireframe con rilievi bilanciati)
         const rows = 22;
         const cols = 32;
         const gridWidth = width * 1.6;
         const gridHeight = height * 1.2;
         
         const originX = width / 2;
-        const originY = height * 0.70; // Origine leggermente abbassata per accogliere vette imponenti
+        const originY = height * 0.68; // Posizionamento bilanciato
         const cellW = gridWidth / cols;
         const cellH = gridHeight / rows;
         
@@ -1911,11 +1911,10 @@
           
           for (let c = 0; c <= cols; c++) {
             const distFromCenter = Math.abs(c - cols / 2) / (cols / 2);
-            
             const globalR = Math.floor(scrollOffset) + r;
             
-            // Rumore montuoso frastagliato con creste alpine appuntite (potenza 2.5 per vette ripide)
-            const ridgeNoise = Math.pow(Math.abs(Math.sin(globalR * 0.35 + c * 0.25)), 2.5);
+            // Rumore montuoso bilanciato
+            const ridgeNoise = Math.pow(Math.abs(Math.sin(globalR * 0.35 + c * 0.25)), 2.2);
             const peakNoise = Math.sin(globalR * 0.15 + c * 0.5) * Math.cos(c * 0.1 - globalR * 0.3);
             
             // Frequenza audio abbinata all'indice della griglia
@@ -1923,14 +1922,13 @@
             const rawVal = dataArray[freqIdx] || 0;
             const audioNorm = Math.pow(rawVal / 255, 1.2);
             
-            // Elevazione potenziata per creare montagne alte e imponenti
-            let elevation = audioNorm * 135 * zScale; // Spinta dinamica audio fino a 135px
-            elevation += ridgeNoise * 95 * zScale;    // Creste montuose fino a 95px
-            elevation += Math.abs(peakNoise) * 45 * zScale;
+            // Elevazione ricalibrata per evitare saturazione visiva
+            let elevation = audioNorm * 85 * zScale; // Spinta dinamica audio
+            elevation += ridgeNoise * 65 * zScale;   // Creste montuose
+            elevation += Math.abs(peakNoise) * 30 * zScale;
             
-            // Vette ancora più imponenti sui lati ed ai picchi dei bassi
             if (distFromCenter > 0.35 || distFromCenter < 0.15) {
-              elevation += bassImpact * 70 * zScale;
+              elevation += bassImpact * 40 * zScale;
             }
             
             // Posizionamento in prospettiva
@@ -1947,33 +1945,34 @@
         // 1. Disegno linee trasversali (orizzontali del terreno)
         for (let r = 0; r <= rows; r++) {
           ctx.beginPath();
-          let maxRowElev = 0;
+          let sumElev = 0;
           for (let c = 0; c <= cols; c++) {
             const p = points[r][c];
-            if (p.elevation > maxRowElev) maxRowElev = p.elevation;
+            sumElev += p.elevation;
             if (c === 0) ctx.moveTo(p.x, p.y);
             else ctx.lineTo(p.x, p.y);
           }
           
+          const avgElev = sumElev / (cols + 1);
           const fadeFar = Math.max(0, Math.min(1, (r / rows) * 1.5 - 0.1));
           
-          // Colorazione e bagliore per le montagne accentuate
+          // Palette ricalibrata: Verde tattico dominante, Giallo ambra sui rilievi, Rosso isolato solo per picchi estremi
           ctx.shadowBlur = 0;
-          if (maxRowElev > 95) {
-            ctx.strokeStyle = `rgba(255, 50, 0, ${fadeFar * 0.95})`; // Magma Red/Orange per picchi molto alti
-            ctx.lineWidth = 2.0;
+          if (avgElev > 75) {
+            ctx.strokeStyle = `rgba(255, 50, 0, ${fadeFar * 0.95})`; // Rosso Magma solo per vette estreme
+            ctx.lineWidth = 1.8;
             ctx.shadowColor = '#FF3200';
-            ctx.shadowBlur = 8;
-          } else if (maxRowElev > 55) {
+            ctx.shadowBlur = 6;
+          } else if (avgElev > 42) {
             ctx.strokeStyle = `rgba(245, 196, 0, ${fadeFar * 0.9})`; // Giallo ambra intenso per rilievi alti
-            ctx.lineWidth = 1.6;
+            ctx.lineWidth = 1.4;
             ctx.shadowColor = '#F5C400';
-            ctx.shadowBlur = 4;
-          } else if (maxRowElev > 30) {
-            ctx.strokeStyle = `rgba(57, 255, 20, ${fadeFar * 0.75})`; // Verde neon tattico per colline
+            ctx.shadowBlur = 3;
+          } else if (avgElev > 18) {
+            ctx.strokeStyle = `rgba(57, 255, 20, ${fadeFar * 0.8})`; // Verde neon tattico dominante per colline e terreno
             ctx.lineWidth = 1.2;
           } else {
-            ctx.strokeStyle = `rgba(0, 229, 255, ${fadeFar * 0.45})`; // Ciano neon per valli
+            ctx.strokeStyle = `rgba(0, 229, 255, ${fadeFar * 0.5})`; // Ciano neon per valli fonde
             ctx.lineWidth = 1.0;
           }
           ctx.stroke();
@@ -1988,8 +1987,8 @@
             if (r === 0) ctx.moveTo(p.x, p.y);
             else ctx.lineTo(p.x, p.y);
           }
-          const alpha = 0.15 + (Math.abs(c - cols / 2) / (cols / 2)) * 0.35;
-          ctx.strokeStyle = `rgba(100, 170, 255, ${alpha})`;
+          const alpha = 0.12 + (Math.abs(c - cols / 2) / (cols / 2)) * 0.3;
+          ctx.strokeStyle = `rgba(57, 255, 20, ${alpha * 0.7})`; // Tonalità verde tattica anche per i vettori di profondità
           ctx.lineWidth = 1.0;
           ctx.stroke();
         }
@@ -1998,12 +1997,12 @@
         for (let r = 0; r <= rows; r++) {
           for (let c = 0; c <= cols; c++) {
             const p = points[r][c];
-            if (p.elevation > 75 * p.zScale && p.rRatio > 0.15) {
-              const alpha = Math.min(1, (p.elevation / (130 * p.zScale)));
+            if (p.elevation > 70 * p.zScale && p.rRatio > 0.15) {
+              const alpha = Math.min(1, (p.elevation / (110 * p.zScale)));
               ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.9})`;
               ctx.shadowColor = '#FFFFFF';
-              ctx.shadowBlur = 6;
-              const pointSize = Math.max(1.5, 3 * p.zScale);
+              ctx.shadowBlur = 5;
+              const pointSize = Math.max(1.5, 2.8 * p.zScale);
               ctx.fillRect(p.x - pointSize / 2, p.y - pointSize / 2, pointSize, pointSize);
               ctx.shadowBlur = 0;
             }
