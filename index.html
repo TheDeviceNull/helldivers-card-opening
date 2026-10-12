@@ -1044,6 +1044,161 @@
       color: var(--text);
     }
 
+    /* Box Guida Aste */
+    .auction-guide-wrapper {
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .auction-guide-box {
+      background: linear-gradient(145deg, rgba(13, 31, 60, 0.85), rgba(7, 18, 36, 0.95));
+      border: 1px solid rgba(245, 196, 0, 0.35);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .auction-guide-toggle-btn {
+      width: 100%;
+      padding: 12px 18px;
+      background: rgba(245, 196, 0, 0.08);
+      border: none;
+      color: var(--yellow);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      font-size: 0.95rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      transition: all 0.2s;
+    }
+
+    .auction-guide-toggle-btn:hover {
+      background: rgba(245, 196, 0, 0.16);
+    }
+
+    .guide-toggle-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .guide-badge {
+      background: var(--yellow);
+      color: var(--darker);
+      font-size: 0.65rem;
+      font-weight: 900;
+      padding: 2px 7px;
+      border-radius: 3px;
+      letter-spacing: 0.12em;
+    }
+
+    .guide-toggle-arrow {
+      font-size: 0.75rem;
+      transition: transform 0.2s;
+      color: var(--yellow);
+    }
+
+    .guide-toggle-arrow.open {
+      transform: rotate(180deg);
+    }
+
+    .auction-guide-body {
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      border-top: 1px solid rgba(245, 196, 0, 0.2);
+    }
+
+    .auction-steps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px;
+    }
+
+    .auction-step-item {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-left: 3px solid var(--yellow);
+      border-radius: 6px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .step-num {
+      background: var(--yellow);
+      color: var(--darker);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 900;
+      font-size: 0.75rem;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .step-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--text);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .step-desc {
+      font-size: 0.76rem;
+      color: #94a3b8;
+      line-height: 1.45;
+    }
+
+    .step-desc strong {
+      color: #ffffff;
+    }
+
+    .step-desc .highlight-badge {
+      display: inline-block;
+      background: rgba(245, 196, 0, 0.15);
+      color: var(--yellow);
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-family: monospace;
+      font-size: 0.75rem;
+      font-weight: bold;
+    }
+
+    .auction-guide-warning {
+      background: rgba(192, 40, 28, 0.12);
+      border: 1px solid rgba(192, 40, 28, 0.4);
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 0.75rem;
+      color: #fca5a5;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .auction-guide-warning strong {
+      color: #ffffff;
+    }
+
     /* Pannello tab */
     .auction-panel {
       display: none;
@@ -1788,6 +1943,87 @@
       <p class="intro-subtitle" id="auction-user-sub">Compravendita carte tra Helldivers</p>
     </div>
 
+    <!-- Banner Fisarmonica: Guida Rapida in 5 Step -->
+    <div class="auction-guide-wrapper">
+      <div class="auction-guide-box">
+        <button class="auction-guide-toggle-btn" id="btn-toggle-auction-guide" onclick="toggleAuctionGuide()">
+          <span class="guide-toggle-left">
+            <span class="guide-badge">MANUALE TATTICO</span>
+            <span class="guide-toggle-title">📜 Come Funziona l'Asta? Guida Rapida in 5 Passaggi</span>
+          </span>
+          <span class="guide-toggle-arrow" id="guide-toggle-arrow">▼</span>
+        </button>
+
+        <div class="auction-guide-body" id="auction-guide-body" style="display: none;">
+          <div class="auction-steps-grid">
+            
+            <!-- STEP 1 -->
+            <div class="auction-step-item">
+              <div class="step-header">
+                <span class="step-num">1</span>
+                <span class="step-title">Metti all'Asta</span>
+              </div>
+              <p class="step-desc">
+                Accedi con Discord e vai nel tab <strong>"➕ Metti all'Asta"</strong>. Seleziona una carta libera dalla tua collezione e imposta il <strong>Prezzo Base</strong> in Super Crediti (SC). La carta resta congelata in sicurezza per 48 ore.
+              </p>
+            </div>
+
+            <!-- STEP 2 -->
+            <div class="auction-step-item">
+              <div class="step-header">
+                <span class="step-num">2</span>
+                <span class="step-title">Rilanci sul Sito</span>
+              </div>
+              <p class="step-desc">
+                Gli altri Helldivers vedono la carta in <strong>"🏷️ Aste Attive"</strong>. Clicca sulla card o sul tasto <strong>"💎 Fai un'offerta"</strong> per rilanciare sul sito. Il nome e il Discord ID del miglior offerente appaiono subito sulla carta.
+              </p>
+            </div>
+
+            <!-- STEP 3 -->
+            <div class="auction-step-item">
+              <div class="step-header">
+                <span class="step-num">3</span>
+                <span class="step-title">Scadenza & Vincitore</span>
+              </div>
+              <p class="step-desc">
+                Allo scadere delle 48h, l'asta termina. Il bot <strong>J.O.E.L.</strong> invia un messaggio privato (<strong>DM</strong>) su Discord al venditore comunicando il vincitore, il suo Discord ID, l'offerta finale e il link al sito.
+              </p>
+            </div>
+
+            <!-- STEP 4 -->
+            <div class="auction-step-item">
+              <div class="step-header">
+                <span class="step-num">4</span>
+                <span class="step-title">Pagamento su Discord</span>
+              </div>
+              <p class="step-desc">
+                L'acquirente vincitore va sul server Discord nel canale <span class="highlight-badge">#profilo</span>, preme il pulsante <span class="highlight-badge">PROFILO</span> e poi <span class="highlight-badge">DONA SC</span> per trasferire al venditore i Super Crediti pattuiti.
+              </p>
+            </div>
+
+            <!-- STEP 5 -->
+            <div class="auction-step-item">
+              <div class="step-header">
+                <span class="step-num">5</span>
+                <span class="step-title">Conferma & Consegna</span>
+              </div>
+              <p class="step-desc">
+                Il venditore controlla l'accredito su Discord, va su <strong>"📋 Le Mie Aste"</strong>, clicca <strong>"✅ Concludi Vendita"</strong> (il Discord ID del compratore è già pre-compilato!) e conferma: la carta viene trasferita immediatamente!
+              </p>
+            </div>
+
+          </div>
+
+          <div class="auction-guide-warning">
+            <span style="font-size:1.3rem;">⚠️</span>
+            <div>
+              <strong>DIRETTIVA SUPER TERRA:</strong> Il venditore deve cliccare su <em>"Conferma Vendita"</em> <strong>SOLO DOPO</strong> aver verificato con certezza la ricezione dei Super Crediti nel canale <code>#profilo</code>. Il trasferimento della carta è istantaneo e irreversibile!
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Tab navigation -->
     <div class="auction-tabs">
       <button class="auction-tab-btn active" id="tab-btn-active" onclick="switchAuctionTab('active', this)">🏷️ Aste
@@ -1795,6 +2031,7 @@
       <button class="auction-tab-btn" id="tab-btn-mine" onclick="switchAuctionTab('mine', this)">📋 Le Mie Aste</button>
       <button class="auction-tab-btn" id="tab-btn-create" onclick="switchAuctionTab('create', this)">➕ Metti
         all'Asta</button>
+      <button class="auction-tab-btn" id="tab-btn-guide" onclick="switchAuctionTab('guide', this)">📖 Come Funziona</button>
     </div>
 
     <!-- TAB: Aste attive (pubblica) -->
@@ -1819,6 +2056,79 @@
           asta o in scambio) sono disponibili.</p>
         <div class="auction-selectable-grid" id="auction-selectable-grid">
           <!-- Popolato da JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: Guida Completa (accessibile a tutti) -->
+    <div class="auction-panel" id="auction-panel-guide">
+      <div class="auction-guide-box" style="box-shadow:none;">
+        <div class="auction-guide-body" style="display:flex; border-top:none;">
+          <h3 style="font-family:'Barlow Condensed',sans-serif; color:var(--yellow); text-transform:uppercase; margin:0; font-size:1.3rem;">
+            📜 Protocollo Ufficiale Super Terra: Come Comprare e Vendere Carte
+          </h3>
+          <p style="color:var(--text); font-size:0.85rem; margin:0 0 10px 0;">
+            Le aste permettono di scambiare carte collezionabili in cambio di Super Crediti (SC). Segui questi 5 semplici passaggi per completare ogni compravendita in totale sicurezza:
+          </p>
+
+          <div class="auction-steps-grid">
+            <div class="auction-step-item">
+              <div class="step-header">
+                <span class="step-num">1</span>
+                <span class="step-title">Metti all'Asta</span>
+              </div>
+              <p class="step-desc">
+                Accedi con Discord, apri la scheda <strong>"➕ Metti all'Asta"</strong>, seleziona una delle tue carte e fissa il prezzo base di partenza in SC. La carta rimane protetta e bloccata per 48 ore.
+              </p>
+            </div>
+
+            <div class="auction-step-item">
+              <div class="step-header">
+                <span class="step-num">2</span>
+                <span class="step-title">Rilanci sul Sito</span>
+              </div>
+              <p class="step-desc">
+                Chiunque può fare un'offerta direttamente dal sito web cliccando sulla carta o sul pulsante <strong>"💎 Fai un'offerta"</strong>. Il rilancio più alto e il Discord ID del miglior offerente vengono aggiornati in tempo reale.
+              </p>
+            </div>
+
+            <div class="auction-step-item">
+              <div class="step-header">
+                <span class="step-num">3</span>
+                <span class="step-title">Fine Asta & DM Bot</span>
+              </div>
+              <p class="step-desc">
+                Allo scadere delle 48 ore, il bot <strong>J.O.E.L.</strong> manda un messaggio privato (DM) al venditore comunicando il nome del vincitore, il suo Discord ID e la cifra finale pattuita.
+              </p>
+            </div>
+
+            <div class="auction-step-item">
+              <div class="step-header">
+                <span class="step-num">4</span>
+                <span class="step-title">Pagamento su Discord</span>
+              </div>
+              <p class="step-desc">
+                L'acquirente vincitore deve andare sul server Discord nel canale <span class="highlight-badge">#profilo</span>, cliccare sul bottone <span class="highlight-badge">PROFILO</span> e poi sul bottone <span class="highlight-badge">DONA SC</span>, specificando il venditore e la cifra esatta.
+              </p>
+            </div>
+
+            <div class="auction-step-item">
+              <div class="step-header">
+                <span class="step-num">5</span>
+                <span class="step-title">Concludi Vendita</span>
+              </div>
+              <p class="step-desc">
+                Il venditore controlla l'accredito su Discord. Torna quindi su <strong>"📋 Le Mie Aste"</strong> e preme <strong>"✅ Concludi Vendita"</strong>: il Discord ID è già pre-compilato, basta confermare e la carta passa all'acquirente!
+              </p>
+            </div>
+          </div>
+
+          <div class="auction-guide-warning" style="margin-top:10px;">
+            <span style="font-size:1.4rem;">🛡️</span>
+            <div>
+              <strong>GARANZIA DEMOCRATICA:</strong> Il venditore è l'unico responsabile del trasferimento della carta. Non cliccare su "Concludi Vendita" prima di aver verificato la donazione SC sul server Discord!
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1852,8 +2162,9 @@
       <h3>✅ Conferma Vendita</h3>
       <div class="auction-modal-card-preview" id="modal-settle-card-preview"></div>
       <div id="modal-settle-winner-info"></div>
-      <p class="auction-create-subtitle">Assicurati di aver ricevuto gli SC su Discord <strong>prima</strong> di
-        confermare. Il trasferimento è irreversibile.</p>
+      <p class="auction-create-subtitle">
+        Verifica di aver ricevuto gli SC su Discord nel canale <strong>#profilo</strong> (tasto <code>PROFILO</code> &rarr; <code>DONA SC</code>) <strong>prima</strong> di confermare. Il trasferimento è irreversibile.
+      </p>
       <div>
         <label for="input-buyer-id">Discord ID del compratore</label>
         <input type="text" id="input-buyer-id" placeholder="Es. 123456789012345678">
@@ -2602,7 +2913,17 @@
       _auctionCountdownTimers = [];
     }
 
-    // Switcha tra i tre tab dell'Auction House
+    // Toggle banner guida
+    function toggleAuctionGuide() {
+      const body = document.getElementById('auction-guide-body');
+      const arrow = document.getElementById('guide-toggle-arrow');
+      if (!body) return;
+      const isOpen = body.style.display !== 'none';
+      body.style.display = isOpen ? 'none' : 'flex';
+      if (arrow) arrow.classList.toggle('open', !isOpen);
+    }
+
+    // Switcha tra i tab dell'Auction House
     function switchAuctionTab(tab, btnEl) {
       document.querySelectorAll('.auction-tab-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.auction-panel').forEach(p => p.classList.remove('active'));
@@ -2619,6 +2940,8 @@
         document.getElementById('auction-panel-create').classList.add('active');
         if (userSessionToken) renderAuctionableCards();
         else renderAuctionAuthWall('auction-selectable-grid');
+      } else if (tab === 'guide') {
+        document.getElementById('auction-panel-guide').classList.add('active');
       }
     }
 
