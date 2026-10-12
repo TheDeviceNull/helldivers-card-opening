@@ -2699,12 +2699,13 @@
 
       // Countdown scadenza
       const countdownId = `acd-${auction.auction_id}`;
+      const aucStatus = auction.status || 'active';
 
       // Status badge (solo per "Le mie aste")
       const statusMap = { active: 'badge-active', completed: 'badge-completed', cancelled: 'badge-cancelled', expired: 'badge-expired' };
       const statusLabel = { active: '● Attiva', completed: '✓ Venduta', cancelled: '✕ Annullata', expired: '⌛ Scaduta' };
       const badgeHtml = isMine
-        ? `<span class="auction-status-badge ${statusMap[auction.status] || ''}">${statusLabel[auction.status] || auction.status}</span>`
+        ? `<span class="auction-status-badge ${statusMap[aucStatus] || ''}">${statusLabel[aucStatus] || aucStatus}</span>`
         : '';
 
       // Box Rilancio / Miglior Offerente con Nome e Discord ID tra parentesi
@@ -2748,7 +2749,7 @@
       `;
 
       // Avvia countdown per le aste attive
-      if (auction.status === 'active' && auction.expires_at) {
+      if (aucStatus === 'active' && auction.expires_at) {
         const timerId = setInterval(() => {
           const el2 = document.getElementById(countdownId);
           if (!el2) { clearInterval(timerId); return; }
@@ -2770,7 +2771,7 @@
 
       // Azioni disponibili per la carta
       const actionsEl = el.querySelector(`#actions-${auction.auction_id}`);
-      if (isMine && auction.status === 'active') {
+      if (isMine && aucStatus === 'active') {
         // Opzioni per il venditore
         const btnSettle = document.createElement('button');
         btnSettle.className = 'btn-auction-action';
@@ -2784,7 +2785,7 @@
 
         actionsEl.appendChild(btnSettle);
         actionsEl.appendChild(btnCancel);
-      } else if (!isMine && auction.status === 'active') {
+      } else if (!isMine && aucStatus === 'active') {
         // Opzioni per i potenziali acquirenti
         const isMyOwnAuction = currentUserProfile && String(currentUserProfile.id) === String(auction.seller_id);
         if (isMyOwnAuction) {
@@ -2794,10 +2795,22 @@
           myBadge.textContent = 'La tua asta';
           actionsEl.appendChild(myBadge);
         } else {
+          // Rende tutta la card cliccabile per aprire il popup di rilancio
+          el.style.cursor = 'pointer';
+          el.title = 'Clicca per fare un\'offerta / rilanciare';
+          el.onclick = (e) => {
+            if (!e.target.closest('button')) {
+              openBidModal(auction);
+            }
+          };
+
           const btnBid = document.createElement('button');
           btnBid.className = 'btn-auction-action btn-auction-bid';
           btnBid.textContent = '💎 Fai un\'offerta';
-          btnBid.onclick = () => openBidModal(auction);
+          btnBid.onclick = (e) => {
+            e.stopPropagation();
+            openBidModal(auction);
+          };
           actionsEl.appendChild(btnBid);
         }
       }
