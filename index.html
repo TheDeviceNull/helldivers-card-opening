@@ -1233,6 +1233,88 @@
       color: white;
     }
 
+    /* Rilanci e offerte */
+    .auction-bid-row {
+      margin-top: 8px;
+      padding: 6px 10px;
+      background: rgba(245, 196, 0, 0.05);
+      border: 1px dashed rgba(245, 196, 0, 0.25);
+      border-radius: 4px;
+    }
+
+    .auction-bid-label {
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+
+    .auction-bid-val {
+      font-size: 0.78rem;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .auction-bid-val.no-bids {
+      color: var(--muted);
+      font-style: italic;
+      font-size: 0.72rem;
+    }
+
+    .bid-amount {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 900;
+      font-size: 1.05rem;
+      color: var(--yellow);
+    }
+
+    .bid-user {
+      font-size: 0.72rem;
+      color: #94a3b8;
+    }
+
+    .bid-id {
+      color: var(--muted);
+      font-size: 0.68rem;
+      font-family: monospace;
+    }
+
+    .btn-auction-bid {
+      background: linear-gradient(135deg, rgba(245, 196, 0, 0.2), rgba(245, 196, 0, 0.05));
+      border-color: var(--yellow);
+      color: var(--yellow);
+      font-weight: 900;
+    }
+
+    .btn-auction-bid:hover {
+      background: var(--yellow);
+      color: var(--darker);
+      box-shadow: 0 0 10px rgba(245, 196, 0, 0.4);
+    }
+
+    .settle-winner-box {
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.35);
+      border-radius: 5px;
+      padding: 8px 12px;
+      margin-bottom: 12px;
+      font-size: 0.75rem;
+      color: #86efac;
+    }
+
+    .settle-winner-box strong {
+      color: #ffffff;
+    }
+
+    .settle-winner-box .winner-id {
+      font-family: monospace;
+      color: var(--yellow);
+      font-weight: bold;
+    }
+
     /* Status badge */
     .auction-status-badge {
       font-family: 'Barlow Condensed', sans-serif;
@@ -1769,6 +1851,7 @@
     <div class="auction-modal">
       <h3>✅ Conferma Vendita</h3>
       <div class="auction-modal-card-preview" id="modal-settle-card-preview"></div>
+      <div id="modal-settle-winner-info"></div>
       <p class="auction-create-subtitle">Assicurati di aver ricevuto gli SC su Discord <strong>prima</strong> di
         confermare. Il trasferimento è irreversibile.</p>
       <div>
@@ -1780,6 +1863,28 @@
         <button class="btn-modal-cancel" onclick="closeAuctionModal('modal-settle-auction')">Annulla</button>
         <button class="btn-modal-confirm" id="btn-confirm-settle" onclick="confirmAuctionSettle()">Trasferisci
           Carta</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: piazza offerta (bid) -->
+  <div class="auction-modal-overlay" id="modal-bid-auction" style="display:none;"
+    onclick="if(event.target===this) closeAuctionModal('modal-bid-auction')">
+    <div class="auction-modal">
+      <h3>💎 Fai un'Offerta</h3>
+      <div class="auction-modal-card-preview" id="modal-bid-card-preview"></div>
+      <div id="modal-bid-current-info" style="margin-bottom:12px;font-size:0.8rem;color:var(--text);"></div>
+      <div>
+        <label for="input-bid-amount" id="label-bid-amount">Tua Offerta (SC)</label>
+        <input type="number" id="input-bid-amount" min="1" placeholder="Inserisci importo in SC">
+      </div>
+      <p class="auction-create-subtitle" style="margin-top:-0.5rem;" id="modal-bid-hint">
+        L'offerta verrà registrata a tuo nome. Ricordati di trasferire gli SC su Discord al venditore al termine.
+      </p>
+      <div class="auction-modal-error" id="modal-bid-error"></div>
+      <div class="auction-modal-actions">
+        <button class="btn-modal-cancel" onclick="closeAuctionModal('modal-bid-auction')">Annulla</button>
+        <button class="btn-modal-confirm" id="btn-confirm-bid" onclick="confirmAuctionBid()">Invia Offerta</button>
       </div>
     </div>
   </div>
@@ -2488,6 +2593,7 @@
 
     let _auctionSelectedCard = null;  // carta selezionata per la creazione asta
     let _settleTargetAuction = null;  // asta target per il settle
+    let _bidTargetAuction = null;     // asta target per il rilancio (bid)
     let _auctionCountdownTimers = []; // handle dei setInterval per i countdown
 
     // Pulisce tutti i countdown attivi (evita memory leak al refresh)
@@ -2601,6 +2707,25 @@
         ? `<span class="auction-status-badge ${statusMap[auction.status] || ''}">${statusLabel[auction.status] || auction.status}</span>`
         : '';
 
+      // Box Rilancio / Miglior Offerente con Nome e Discord ID tra parentesi
+      let bidInfoHtml = '';
+      if (auction.highest_bid && auction.highest_bidder_name) {
+        bidInfoHtml = `
+          <div class="auction-bid-row">
+            <div class="auction-bid-label">Miglior offerente</div>
+            <div class="auction-bid-val">
+              <span class="bid-amount">${auction.highest_bid} SC</span>
+              <span class="bid-user">da ${auction.highest_bidder_name} <span class="bid-id">(${auction.highest_bidder_id})</span></span>
+            </div>
+          </div>`;
+      } else {
+        bidInfoHtml = `
+          <div class="auction-bid-row">
+            <div class="auction-bid-label">Miglior offerente</div>
+            <div class="auction-bid-val no-bids">Nessun rilancio ancora</div>
+          </div>`;
+      }
+
       el.innerHTML = `
         <div class="auction-card-preview">${previewHtml}</div>
         <div class="auction-card-info">
@@ -2617,6 +2742,7 @@
             </div>
             <div class="auction-countdown" id="${countdownId}">--:--:--</div>
           </div>
+          ${bidInfoHtml}
         </div>
         <div class="auction-card-actions" id="actions-${auction.auction_id}"></div>
       `;
@@ -2642,9 +2768,10 @@
         _auctionCountdownTimers.push(timerId);
       }
 
-      // Azioni specifiche per "Le mie aste"
+      // Azioni disponibili per la carta
       const actionsEl = el.querySelector(`#actions-${auction.auction_id}`);
       if (isMine && auction.status === 'active') {
+        // Opzioni per il venditore
         const btnSettle = document.createElement('button');
         btnSettle.className = 'btn-auction-action';
         btnSettle.textContent = '✅ Concludi Vendita';
@@ -2657,6 +2784,22 @@
 
         actionsEl.appendChild(btnSettle);
         actionsEl.appendChild(btnCancel);
+      } else if (!isMine && auction.status === 'active') {
+        // Opzioni per i potenziali acquirenti
+        const isMyOwnAuction = currentUserProfile && String(currentUserProfile.id) === String(auction.seller_id);
+        if (isMyOwnAuction) {
+          const myBadge = document.createElement('span');
+          myBadge.className = 'auction-status-badge badge-active';
+          myBadge.style.margin = 'auto';
+          myBadge.textContent = 'La tua asta';
+          actionsEl.appendChild(myBadge);
+        } else {
+          const btnBid = document.createElement('button');
+          btnBid.className = 'btn-auction-action btn-auction-bid';
+          btnBid.textContent = '💎 Fai un\'offerta';
+          btnBid.onclick = () => openBidModal(auction);
+          actionsEl.appendChild(btnBid);
+        }
       }
 
       return el;
@@ -2792,7 +2935,27 @@
           <span style="font-size:0.75rem;color:var(--muted);">Prezzo base: ${auction.base_price} SC</span>
         </div>
       `;
-      document.getElementById('input-buyer-id').value = '';
+
+      const winnerInfoEl = document.getElementById('modal-settle-winner-info');
+      const buyerInput = document.getElementById('input-buyer-id');
+
+      if (auction.highest_bidder_id && auction.highest_bid) {
+        winnerInfoEl.innerHTML = `
+          <div class="settle-winner-box">
+            🏆 <strong>Vincitore Rilanci:</strong> ${auction.highest_bidder_name} <span class="winner-id">(${auction.highest_bidder_id})</span><br>
+            💰 <strong>Offerta finale:</strong> ${auction.highest_bid} SC
+          </div>
+        `;
+        buyerInput.value = auction.highest_bidder_id;
+      } else {
+        winnerInfoEl.innerHTML = `
+          <div style="font-size:0.75rem;color:var(--muted);margin-bottom:10px;font-style:italic;">
+            Nessun acquirente ha registrato rilanci sul sito per questa asta.
+          </div>
+        `;
+        buyerInput.value = '';
+      }
+
       document.getElementById('modal-settle-error').style.display = 'none';
       document.getElementById('btn-confirm-settle').disabled = false;
       document.getElementById('btn-confirm-settle').textContent = 'Trasferisci Carta';
@@ -2855,6 +3018,108 @@
       }
     }
 
+    // ---- MODAL: PIAZZA OFFERTA (BID) ----
+    function openBidModal(auction) {
+      if (!userSessionToken) {
+        alert('Effettua il Login Discord per poter partecipare alle aste e fare offerte!');
+        return;
+      }
+      _bidTargetAuction = auction;
+      const isRare = ['rare', 'rara', 'elite', 'legendary', 'leggendaria'].includes((auction.card_rarity || '').toLowerCase());
+      
+      const tokenParam = userSessionToken ? `s=${encodeURIComponent(userSessionToken)}` : '';
+      const imgUrl = `${API_BASE_URL}/collection-card-image?file=${encodeURIComponent(auction.card_id)}&${tokenParam}`;
+
+      document.getElementById('modal-bid-card-preview').innerHTML = `
+        <div class="auction-modal-card-info">
+          <strong>${auction.card_name}</strong>
+          <span class="rarity-badge badge-${isRare ? 'rara' : 'comune'}" style="align-self:flex-start;">${(auction.card_rarity || 'comune').toUpperCase()}</span>
+          <span style="font-size:0.75rem;color:var(--muted);">Venditore: 🪖 ${auction.seller_username}</span>
+        </div>
+      `;
+
+      const minBid = (auction.highest_bid && auction.highest_bid > 0)
+        ? auction.highest_bid + 1
+        : auction.base_price;
+
+      const currentInfoEl = document.getElementById('modal-bid-current-info');
+      if (auction.highest_bid) {
+        currentInfoEl.innerHTML = `
+          Miglior offerente: <strong>${auction.highest_bidder_name} (${auction.highest_bidder_id})</strong><br>
+          Offerta attuale: <strong style="color:var(--yellow);">${auction.highest_bid} SC</strong> &bull; Rilancio minimo: <strong>${minBid} SC</strong>
+        `;
+      } else {
+        currentInfoEl.innerHTML = `
+          Nessuna offerta ancora.<br>
+          Prezzo base / Offerta minima: <strong style="color:var(--yellow);">${minBid} SC</strong>
+        `;
+      }
+
+      const input = document.getElementById('input-bid-amount');
+      input.min = minBid;
+      input.value = minBid;
+      document.getElementById('modal-bid-error').style.display = 'none';
+      document.getElementById('btn-confirm-bid').disabled = false;
+      document.getElementById('btn-confirm-bid').textContent = 'Invia Offerta';
+      document.getElementById('modal-bid-auction').style.display = 'flex';
+    }
+
+    async function confirmAuctionBid() {
+      if (!_bidTargetAuction) return;
+      const input = document.getElementById('input-bid-amount');
+      const errEl = document.getElementById('modal-bid-error');
+      const btn = document.getElementById('btn-confirm-bid');
+      const amount = parseInt(input.value, 10);
+      const minBid = parseInt(input.min, 10) || 1;
+
+      if (!amount || amount < minBid) {
+        errEl.textContent = `L'offerta deve essere di almeno ${minBid} SC.`;
+        errEl.style.display = 'block';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Invio offerta...';
+      errEl.style.display = 'none';
+
+      try {
+        const resp = await fetch(`${API_BASE_URL}/auction/bid`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${userSessionToken}`
+          },
+          body: JSON.stringify({
+            auction_id: _bidTargetAuction.auction_id,
+            bid_amount: amount
+          })
+        });
+        const data = await resp.json();
+        if (resp.ok && data.success) {
+          closeAuctionModal('modal-bid-auction');
+          loadAuctionList();
+        } else {
+          const errorMessages = {
+            unauthorized: 'Sessione scaduta. Ricarica la pagina e rifai il login.',
+            cannot_bid_own_auction: 'Non puoi fare offerte sulle tue stesse aste!',
+            auction_expired: 'L\'asta è scaduta.',
+            auction_not_active: 'L\'asta non è più attiva.',
+            bid_too_low: `Offerta troppo bassa. Il rilancio minimo è ${data.min_bid || minBid} SC.`
+          };
+          errEl.textContent = errorMessages[data.error] || `Errore: ${data.error}`;
+          errEl.style.display = 'block';
+          btn.disabled = false;
+          btn.textContent = 'Invia Offerta';
+        }
+      } catch (e) {
+        console.error('[AUCTION] Errore offerta:', e);
+        errEl.textContent = 'Errore di connessione. Riprova.';
+        errEl.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Invia Offerta';
+      }
+    }
+
     // ---- ANNULLAMENTO ASTA ----
     async function cancelAuction(auctionId, cardEl) {
       if (!confirm('Sei sicuro di voler annullare questa asta? La carta tornerà disponibile.')) return;
@@ -2886,6 +3151,7 @@
       document.getElementById(modalId).style.display = 'none';
       _auctionSelectedCard = null;
       _settleTargetAuction = null;
+      _bidTargetAuction = null;
       // Rimuovi selezione carte
       document.querySelectorAll('.auction-selectable-card.selected').forEach(c => c.classList.remove('selected'));
     }
