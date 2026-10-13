@@ -800,9 +800,9 @@
     .nav-controls {
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-right: 140px;
-      /* spazio per audio control */
+      gap: 8px;
+      /* su desktop lascia spazio per audio control fisso a destra */
+      margin-right: 130px;
     }
 
     .btn-nav-action {
@@ -984,7 +984,67 @@
       }
     }
 
+    /* ===== RESPONSIVE MOBILE ===== */
+    @media (max-width: 600px) {
 
+      /* Navbar: altezza fissa, no overflow */
+      .top-nav-bar {
+        height: 54px;
+        padding: 0 0.75rem;
+        gap: 6px;
+      }
+
+      /* Brand: nascondi testo, mostra solo logo */
+      .nav-brand span {
+        display: none;
+      }
+
+      /* Controlla gruppo bottoni */
+      .nav-controls {
+        gap: 5px;
+        margin-right: 60px; /* spazio solo per il bottone audio compatto */
+        flex-shrink: 0;
+      }
+
+      /* Bottoni navigazione più compatti */
+      .btn-nav-action {
+        padding: 5px 8px;
+        font-size: 0.7rem;
+        letter-spacing: 0.04em;
+        gap: 3px;
+      }
+
+      /* Nascondi emoji nei bottoni nav su mobile stretto */
+      .btn-nav-action .btn-emoji {
+        display: none;
+      }
+
+      /* Widget audio: abbassato sotto la navbar, non sovrappone */
+      #audio-control-wrapper {
+        top: 60px;
+        right: 8px;
+        flex-direction: row;
+        gap: 6px;
+        align-items: center;
+      }
+
+      /* Volume slider nascosto su mobile (troppo piccolo per essere utile) */
+      #volume-slider {
+        display: none;
+      }
+
+      /* Link player audio compatto */
+      #audio-control-wrapper > a {
+        font-size: 0.65rem;
+        padding: 3px 6px;
+        margin-top: 0;
+      }
+
+      /* Schermata asta: padding top aumentato per audio widget abbassato */
+      #screen-auction {
+        padding-top: 7rem;
+      }
+    }
 
     /* ===== SCHERMATA ASTA ===== */
     #screen-auction {
@@ -1798,14 +1858,12 @@
       <span>Archivio Carte Super Terra</span>
     </div>
     <div class="nav-controls">
-      <button class="btn-nav-action" id="btn-show-intro" onclick="switchView('intro')" style="display:none;">
-        ✉️ Riscatta Pacchetto
-      </button>
+      <!-- bottone Riscatta Pacchetto rimosso: l'unica modalità è tramite token JOEL -->
       <button class="btn-nav-action" id="btn-show-collection" onclick="switchView('collection')">
-        🗂️ La Mia Collezione
+        <span class="btn-emoji">🗂️</span> Collezione
       </button>
       <button class="btn-nav-action" id="btn-show-auction" onclick="switchView('auction')">
-        🏛️ Auction
+        <span class="btn-emoji">🏛️</span> Auction
       </button>
       <div id="auth-container">
         <button class="btn-nav-action btn-discord-login" onclick="loginWithDiscord()">
