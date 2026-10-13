@@ -2202,6 +2202,7 @@
         <label for="input-base-price">Prezzo base (SC)</label>
         <input type="number" id="input-base-price" min="1" placeholder="Es. 500">
       </div>
+      <div id="auction-card-price-hint" class="auction-create-subtitle" style="margin-top:-0.5rem; display:none;"></div>
       <p class="auction-create-subtitle" style="margin-top:-0.5rem;">L'asta durerà 48 ore. La carta sarà bloccata per
         tutta la durata.</p>
       <div class="auction-modal-error" id="modal-create-error"></div>
@@ -2279,6 +2280,7 @@
 
     let SELECTED_CARDS = [];
     let currentToken = null;
+    let _auctionSelectedCardValuation = null;
 
     let timerInterval = null;
 
@@ -3233,17 +3235,50 @@
           </div>
         `;
 
-        cardEl.onclick = () => openCreateAuctionModal(card, cardEl);
+        cardEl.onclick = async () => { await openCreateAuctionModal(card, cardEl); };
         grid.appendChild(cardEl);
       });
     }
 
+    async function loadAuctionCardValuation(cardId) {
+      const priceInput = document.getElementById('input-base-price');
+      const errEl = document.getElementById('modal-create-error');
+      const hintEl = document.getElementById('auction-card-price-hint');
+
+      priceInput.value = '';
+      priceInput.min = '1';
+      errEl.style.display = 'none';
+      hintEl.textContent = 'Calcolo prezzo minimo in corso...';
+      hintEl.style.display = 'block';
+
+      try {
+        const resp = await fetch(`${API_BASE_URL}/auction/card-valuation?card_id=${encodeURIComponent(cardId)}`);
+        const data = await resp.json();
+
+        if (!resp.ok) {
+          throw new Error(data.error || 'card_valuation_unavailable');
+        }
+
+        const minPrice = Number(data.min_price || 0);
+        const copiesInGame = data.copies_in_game !== undefined && data.copies_in_game !== null ? data.copies_in_game : 0;
+        _auctionSelectedCardValuation = data;
+        priceInput.min = String(Math.max(1, minPrice));
+        priceInput.value = String(minPrice || 1);
+        hintEl.textContent = `Prezzo minimo consigliato: ${minPrice} SC • copie in gioco: ${copiesInGame}`;
+      } catch (error) {
+        _auctionSelectedCardValuation = null;
+        hintEl.textContent = 'Prezzo minimo non disponibile. Inserisci un valore manuale superiore a 0.';
+        console.warn('[AUCTION] Valutazione carta non disponibile:', error);
+      }
+    }
+
     // ---- MODAL: CREA ASTA ----
-    function openCreateAuctionModal(card, cardEl) {
+    async function openCreateAuctionModal(card, cardEl) {
       // Deseleziona eventuali selezioni precedenti
       document.querySelectorAll('.auction-selectable-card.selected').forEach(c => c.classList.remove('selected'));
       cardEl.classList.add('selected');
       _auctionSelectedCard = card;
+      _auctionSelectedCardValuation = null;
 
       // Aggiorna anteprima nel modal
       const tokenParam = userSessionToken ? `s=${encodeURIComponent(userSessionToken)}` : '';
@@ -3261,6 +3296,7 @@
       document.getElementById('modal-create-error').style.display = 'none';
       document.getElementById('btn-confirm-create').disabled = false;
       document.getElementById('modal-create-auction').style.display = 'flex';
+      await loadAuctionCardValuation(card.card_id);
     }
 
     async function confirmAuctionCreate() {
@@ -3269,9 +3305,16 @@
       const errEl = document.getElementById('modal-create-error');
       const btn = document.getElementById('btn-confirm-create');
       const price = parseInt(priceInput.value, 10);
+      const minPrice = Number(_auctionSelectedCardValuation?.min_price || 0);
 
       if (!price || price <= 0) {
         errEl.textContent = 'Inserisci un prezzo base valido (intero positivo).';
+        errEl.style.display = 'block';
+        return;
+      }
+
+      if (minPrice > 0 && price < minPrice) {
+        errEl.textContent = `Prezzo troppo basso. Il minimo consigliato per questa carta è ${minPrice} SC.`;
         errEl.style.display = 'block';
         return;
       }
@@ -3301,7 +3344,8 @@
             auction_cap_reached: 'Hai già 3 aste attive. Chiudine una prima di crearne un\'altra.',
             card_not_owned: 'Carta non trovata nella tua collezione.',
             card_locked: 'La carta è già bloccata da un\'altra asta o scambio.',
-            invalid_base_price: 'Prezzo non valido. Deve essere un intero positivo.'
+            invalid_base_price: 'Prezzo non valido. Deve essere un intero positivo.',
+            price_below_minimum: `Prezzo troppo basso. Il minimo per questa carta è ${data.min_price ?? 'n.d.'} SC.`
           };
           errEl.textContent = errorMessages[data.error] || `Errore: ${data.error}`;
           errEl.style.display = 'block';
