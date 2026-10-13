@@ -2476,7 +2476,6 @@
 
       // 2. Se è presente un token di apertura bustina
       if (currentToken) {
-        document.getElementById('btn-show-intro').style.display = 'inline-flex';
         switchView('intro');
         await validateToken(currentToken);
       } else {
