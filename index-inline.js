@@ -795,8 +795,8 @@
       } else {
         previewHtml = `
           <div class="auction-card-preview-placeholder">
-            <div class="ph-num">${(auction.card_id || '').split('-')[0] || '?'}</div>
-            <div class="ph-label">Classificato</div>
+            <div class="ph-num">${auction.card_id || '?'}</div>
+            <div class="ph-label">${auction.card_name || 'Carta'}</div>
           </div>`;
       }
 
