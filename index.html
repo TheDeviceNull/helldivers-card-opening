@@ -1335,13 +1335,6 @@
       line-height: 1;
     }
 
-    .auction-card-preview-placeholder .ph-label {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 0.75rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-    }
-
     .auction-card-info {
       padding: 12px 14px;
       display: flex;
@@ -3074,8 +3067,7 @@
       } else {
         previewHtml = `
           <div class="auction-card-preview-placeholder">
-            <div class="ph-num">${auction.card_id || '?'}</div>
-            <div class="ph-label">${auction.card_name || 'Carta'}</div>
+            <div class="ph-num">${(auction.card_id || '?').split('-')[0]}</div>
           </div>`;
       }
 
