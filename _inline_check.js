@@ -770,7 +770,7 @@
 
         grid.innerHTML = '';
         if (!data.auctions || data.auctions.length === 0) {
-          grid.innerHTML = '<div class="auction-empty">Non hai ancora messo nessuna carta all\'asta</div>';
+          grid.innerHTML = '<div class="auction-empty">Non hai aste attive o recenti come venditore, miglior offerente o acquirente</div>';
           return;
         }
         data.auctions.forEach(a => grid.appendChild(buildAuctionCard(a, true)));
@@ -803,6 +803,7 @@
       // Countdown scadenza
       const countdownId = `acd-${auction.auction_id}`;
       const aucStatus = auction.status || 'active';
+      const myRole = auction.my_role || (isMine ? 'seller' : null);
 
       // Status badge (solo per "Le mie aste")
       const statusMap = { active: 'badge-active', completed: 'badge-completed', cancelled: 'badge-cancelled', expired: 'badge-expired' };
@@ -874,7 +875,7 @@
 
       // Azioni disponibili per la carta
       const actionsEl = el.querySelector(`#actions-${auction.auction_id}`);
-      if (isMine && aucStatus === 'active') {
+      if (isMine && myRole === 'seller' && aucStatus === 'active') {
         // Opzioni per il venditore
         const btnSettle = document.createElement('button');
         btnSettle.className = 'btn-auction-action';
@@ -888,6 +889,12 @@
 
         actionsEl.appendChild(btnSettle);
         actionsEl.appendChild(btnCancel);
+      } else if (isMine && myRole === 'bidder' && aucStatus === 'active') {
+        const bidderBadge = document.createElement('span');
+        bidderBadge.className = 'auction-status-badge badge-active';
+        bidderBadge.style.margin = 'auto';
+        bidderBadge.textContent = 'Sei il miglior offerente';
+        actionsEl.appendChild(bidderBadge);
       } else if (!isMine && aucStatus === 'active') {
         // Opzioni per i potenziali acquirenti
         const isMyOwnAuction = currentUserProfile && String(currentUserProfile.id) === String(auction.seller_id);
