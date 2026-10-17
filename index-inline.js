@@ -781,6 +781,13 @@
     }
 
     // ---- COSTRUISCE UNA CARD ASTA (sia pubblica che personale) ----
+    function formatAuctionDate(timestamp) {
+      if (timestamp === null || timestamp === undefined || timestamp === '') return 'Data non disponibile';
+      const date = new Date(Number(timestamp) * 1000);
+      if (!Number.isFinite(date.getTime())) return 'Data non disponibile';
+      return date.toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' });
+    }
+
     function buildAuctionCard(auction, isMine) {
       const el = document.createElement('div');
       const isRare = ['rare', 'rara', 'elite', 'legendary', 'leggendaria'].includes((auction.card_rarity || '').toLowerCase());
@@ -808,6 +815,10 @@
       const statusLabel = { active: '● Attiva', completed: '✓ Venduta', cancelled: '✕ Annullata', expired: '⌛ Scaduta' };
       const badgeHtml = isMine
         ? `<span class="auction-status-badge ${statusMap[aucStatus] || ''}">${statusLabel[aucStatus] || aucStatus}</span>`
+        : '';
+      const openingDate = formatAuctionDate(auction.created_at);
+      const closingDateHtml = isMine && aucStatus === 'completed' && auction.settled_at
+        ? `<div>Conclusa il: ${formatAuctionDate(auction.settled_at)}</div>`
         : '';
 
       // Box Rilancio / Miglior Offerente con Nome e Discord ID tra parentesi
@@ -838,6 +849,10 @@
             ${badgeHtml}
           </div>
           <div class="auction-seller">🪖 ${auction.seller_username || 'Venditore'}</div>
+          <div class="auction-dates">
+            <div>Aperta il: ${openingDate}</div>
+            ${closingDateHtml}
+          </div>
           <div class="auction-price-row">
             <div>
               <div class="auction-price-label">Prezzo base</div>
