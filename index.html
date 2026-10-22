@@ -2278,6 +2278,38 @@
     // ===== CONFIGURAZIONE BACKEND =====
     // Sostituisci con il tuo URL Cloudflare Tunnel finale
     const API_BASE_URL = 'https://specified-ton-numerical-types.trycloudflare.com';
+    let activeApiBaseUrl = API_BASE_URL;
+
+    async function fetchApi(path, options = {}) {
+      try {
+        return await fetch(`${activeApiBaseUrl}${path}`, options);
+      } catch (error) {
+        if (!(error instanceof TypeError)) throw error;
+
+        const pageUrl = new URL(window.location.href);
+        pageUrl.searchParams.set('_api_config_refresh', Date.now().toString());
+        const pageResponse = await fetch(pageUrl, { cache: 'no-store' });
+        if (!pageResponse.ok) {
+          throw new Error(`Impossibile aggiornare la configurazione API: HTTP ${pageResponse.status}`);
+        }
+
+        const html = await pageResponse.text();
+        const match = html.match(/const\s+API_BASE_URL\s*=\s*(['"])(https:\/\/[^'"]+)\1\s*;/);
+        if (!match) {
+          throw new Error('API_BASE_URL non trovato nella pagina aggiornata.');
+        }
+
+        const refreshedApiBaseUrl = new URL(match[2]);
+        if (refreshedApiBaseUrl.protocol !== 'https:') {
+          throw new Error('La configurazione aggiornata dell’API non usa HTTPS.');
+        }
+        if (refreshedApiBaseUrl.origin === activeApiBaseUrl) throw error;
+
+        console.warn('[API] Endpoint Cloudflare aggiornato; riprovo la richiesta.');
+        activeApiBaseUrl = refreshedApiBaseUrl.origin;
+        return fetch(`${activeApiBaseUrl}${path}`, options);
+      }
+    }
 
     let SELECTED_CARDS = [];
     let currentToken = null;
@@ -2519,7 +2551,7 @@
     async function handleOAuthCallback(code) {
       showLoading(true);
       try {
-        const resp = await fetch(`${API_BASE_URL}/auth/discord`, {
+        const resp = await fetchApi('/auth/discord', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ code: code, redirect_uri: DISCORD_REDIRECT_URI })
@@ -2543,7 +2575,7 @@
     async function fetchUserProfileAndCollection() {
       if (!userSessionToken) return;
       try {
-        const resp = await fetch(`${API_BASE_URL}/user-collection`, {
+        const resp = await fetchApi('/user-collection', {
           headers: { 'Authorization': `Bearer ${userSessionToken}` }
         });
         if (resp.ok) {
@@ -2600,7 +2632,7 @@
     async function loadCollectionData() {
       if (allCatalogCards.length === 0) {
         try {
-          const resp = await fetch(`${API_BASE_URL}/all-cards`);
+          const resp = await fetchApi('/all-cards');
           if (resp.ok) {
             const data = await resp.json();
             allCatalogCards = data.cards;
@@ -2681,7 +2713,7 @@
 
       // Usa s=${userSessionToken} o t=${currentToken} per autenticare la risorsa immagine
       const tokenParam = userSessionToken ? `s=${encodeURIComponent(userSessionToken)}` : (currentToken ? `t=${encodeURIComponent(currentToken)}` : '');
-      const imgUrl = `${API_BASE_URL}/collection-card-image?file=${encodeURIComponent(card.id)}&${tokenParam}`;
+      const imgUrl = `${activeApiBaseUrl}/collection-card-image?file=${encodeURIComponent(card.id)}&${tokenParam}`;
 
       el.innerHTML = `
         ${copies > 1 ? `<span class="copies-badge">x${copies}</span>` : ''}
@@ -2740,7 +2772,7 @@
     async function validateToken(token) {
       showLoading(true);
       try {
-        const response = await fetch(`${API_BASE_URL}/validate?t=${token}`);
+        const response = await fetchApi(`/validate?t=${token}`);
         const data = await response.json();
 
         if (data.valid) {
@@ -2849,7 +2881,7 @@
           </div>
         `;
       } else {
-        const imgUrl = `${API_BASE_URL}/card-image?t=${currentToken}&file=${encodeURIComponent(card.id)}`;
+        const imgUrl = `${activeApiBaseUrl}/card-image?t=${currentToken}&file=${encodeURIComponent(card.id)}`;
         cardContent = `
           <img src="${imgUrl}" alt="${card.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
           <div class="card-placeholder" style="display:none">
@@ -2880,7 +2912,7 @@
         dlBtn.onclick = async (e) => {
           e.stopPropagation();
           const fileName = card.filename || `${card.id}.png`;
-          const imgUrl = `${API_BASE_URL}/card-image?t=${currentToken}&file=${encodeURIComponent(card.id)}`;
+          const imgUrl = `${activeApiBaseUrl}/card-image?t=${currentToken}&file=${encodeURIComponent(card.id)}`;
           try {
             const resp = await fetch(imgUrl);
             if (!resp.ok) throw new Error('Fetch fallito');
@@ -3020,7 +3052,7 @@
       try {
         const headers = {};
         if (userSessionToken) headers['Authorization'] = `Bearer ${userSessionToken}`;
-        const resp = await fetch(`${API_BASE_URL}/auction/list`, { headers });
+        const resp = await fetchApi('/auction/list', { headers });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const data = await resp.json();
 
@@ -3042,7 +3074,7 @@
       grid.innerHTML = '<div class="auction-empty">Recupero in corso...</div>';
 
       try {
-        const resp = await fetch(`${API_BASE_URL}/auction/my-auctions`, {
+        const resp = await fetchApi('/auction/my-auctions', {
           headers: { 'Authorization': `Bearer ${userSessionToken}` }
         });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -3076,7 +3108,7 @@
       // Anteprima immagine (solo se image_url è presente)
       let previewHtml;
       if (auction.image_url) {
-        const fullUrl = `${API_BASE_URL}${auction.image_url}`;
+        const fullUrl = `${activeApiBaseUrl}${auction.image_url}`;
         previewHtml = `<img src="${fullUrl}" alt="${auction.card_name}" onerror="this.parentElement.innerHTML=buildAuctionPlaceholder()"`
           + ` style="width:100%;height:100%;object-fit:cover;">`;
       } else {
@@ -3251,7 +3283,7 @@
         cardEl.className = `auction-selectable-card ${isRare ? 'rare-card' : ''}`;
 
         const tokenParam = userSessionToken ? `s=${encodeURIComponent(userSessionToken)}` : '';
-        const imgUrl = `${API_BASE_URL}/collection-card-image?file=${encodeURIComponent(card.card_id)}&${tokenParam}`;
+        const imgUrl = `${activeApiBaseUrl}/collection-card-image?file=${encodeURIComponent(card.card_id)}&${tokenParam}`;
 
         cardEl.innerHTML = `
           ${(card.copies || 1) > 1 ? `<span class="sel-copies">x${card.copies}</span>` : ''}
@@ -3278,7 +3310,7 @@
       hintEl.style.display = 'block';
 
       try {
-        const resp = await fetch(`${API_BASE_URL}/auction/card-valuation?card_id=${encodeURIComponent(cardId)}`);
+        const resp = await fetchApi(`/auction/card-valuation?card_id=${encodeURIComponent(cardId)}`);
         const data = await resp.json();
 
         if (!resp.ok) {
@@ -3308,7 +3340,7 @@
 
       // Aggiorna anteprima nel modal
       const tokenParam = userSessionToken ? `s=${encodeURIComponent(userSessionToken)}` : '';
-      const imgUrl = `${API_BASE_URL}/collection-card-image?file=${encodeURIComponent(card.card_id)}&${tokenParam}`;
+      const imgUrl = `${activeApiBaseUrl}/collection-card-image?file=${encodeURIComponent(card.card_id)}&${tokenParam}`;
       const isRare = ['rare', 'rara', 'elite', 'legendary', 'leggendaria'].includes((card.rarity || '').toLowerCase());
       document.getElementById('modal-create-card-preview').innerHTML = `
         <img src="${imgUrl}" alt="${card.card_name}" style="width:50px;border-radius:5px;" onerror="this.style.display='none'">
@@ -3350,7 +3382,7 @@
       errEl.style.display = 'none';
 
       try {
-        const resp = await fetch(`${API_BASE_URL}/auction/create`, {
+        const resp = await fetchApi('/auction/create', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -3443,7 +3475,7 @@
       errEl.style.display = 'none';
 
       try {
-        const resp = await fetch(`${API_BASE_URL}/auction/settle`, {
+        const resp = await fetchApi('/auction/settle', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -3491,7 +3523,7 @@
       const isRare = ['rare', 'rara', 'elite', 'legendary', 'leggendaria'].includes((auction.card_rarity || '').toLowerCase());
       
       const tokenParam = userSessionToken ? `s=${encodeURIComponent(userSessionToken)}` : '';
-      const imgUrl = `${API_BASE_URL}/collection-card-image?file=${encodeURIComponent(auction.card_id)}&${tokenParam}`;
+      const imgUrl = `${activeApiBaseUrl}/collection-card-image?file=${encodeURIComponent(auction.card_id)}&${tokenParam}`;
 
       document.getElementById('modal-bid-card-preview').innerHTML = `
         <div class="auction-modal-card-info">
@@ -3546,7 +3578,7 @@
       errEl.style.display = 'none';
 
       try {
-        const resp = await fetch(`${API_BASE_URL}/auction/bid`, {
+        const resp = await fetchApi('/auction/bid', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -3588,7 +3620,7 @@
       if (!confirm('Sei sicuro di voler annullare questa asta? La carta tornerà disponibile.')) return;
 
       try {
-        const resp = await fetch(`${API_BASE_URL}/auction/cancel`, {
+        const resp = await fetchApi('/auction/cancel', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
