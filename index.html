@@ -2158,6 +2158,10 @@
             <option value="elite">Elite → Legendary (6 carte) — 40%</option>
           </select>
         </label>
+        <label class="fusion-field" for="fusion-series">
+          Serie
+          <select id="fusion-series"></select>
+        </label>
         <label class="fusion-field" for="fusion-times">
           Fusioni
           <input id="fusion-times" type="number" min="1" max="10" value="1">
@@ -2685,6 +2689,11 @@
 
       updateAuthUI();
 
+      document.getElementById('fusion-rarity').addEventListener('change', () => {
+        resetFusionPreview();
+        populateFusionSeriesOptions();
+      });
+
       // 2. Se è presente un token di apertura bustina
       if (currentToken) {
         switchView('intro');
@@ -2714,6 +2723,7 @@
       } else if (viewName === 'fusion') {
         document.getElementById('screen-fusion').style.display = 'flex';
         resetFusionPreview();
+        populateFusionSeriesOptions();
         if (!userSessionToken) {
           setFusionStatus('Accedi con Discord per usare la fusione.');
         } else {
@@ -2843,6 +2853,38 @@
       document.getElementById('fusion-confirm-button').hidden = true;
     }
 
+    async function populateFusionSeriesOptions() {
+      if (allCatalogCards.length === 0) {
+        try {
+          const resp = await fetchApi('/all-cards');
+          if (resp.ok) {
+            const data = await resp.json();
+            allCatalogCards = data.cards;
+          }
+        } catch (e) {
+          console.warn("Impossibile caricare il catalogo carte per la fusione:", e);
+        }
+      }
+      const rarity = document.getElementById('fusion-rarity').value;
+      const select = document.getElementById('fusion-series');
+      const previousValue = select.value;
+      const seriesList = [...new Set(
+        allCatalogCards
+          .filter(card => card.rarity === rarity)
+          .map(card => card.series)
+      )].sort();
+      select.replaceChildren();
+      for (const series of seriesList) {
+        const option = document.createElement('option');
+        option.value = series;
+        option.textContent = series;
+        select.appendChild(option);
+      }
+      if (seriesList.includes(previousValue)) {
+        select.value = previousValue;
+      }
+    }
+
     function getFusionErrorMessage(code) {
       const messages = {
         unauthorized: 'La sessione Discord è scaduta. Accedi di nuovo.',
@@ -2867,7 +2909,12 @@
       }
 
       const rarity = document.getElementById('fusion-rarity').value;
+      const series = document.getElementById('fusion-series').value;
       const times = Number(document.getElementById('fusion-times').value);
+      if (!series) {
+        setFusionStatus('Nessuna serie disponibile per questa rarità.');
+        return;
+      }
       if (!Number.isInteger(times) || times < 1 || times > 10) {
         setFusionStatus('Il numero di fusioni deve essere compreso tra 1 e 10.');
         return;
