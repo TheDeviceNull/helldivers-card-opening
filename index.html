@@ -2110,7 +2110,7 @@
                 <span class="step-title">Scegli il Tier e Richiedi l'Anteprima</span>
               </div>
               <p class="step-desc">
-                Accedi con Discord, seleziona la <strong>rarità degli ingredienti</strong> (Core, Rare o Elite) e il <strong>numero di fusioni</strong> che vuoi eseguire (max 10 per volta). Premi <strong>"Mostra anteprima"</strong>: il sistema calcolerà automaticamente quali doppioni liberi verranno consumati, partendo da quelli di cui hai più copie in eccesso.
+                Accedi con Discord, seleziona la <strong>rarità degli ingredienti</strong> (Core, Rare o Elite) e il <strong>numero di fusioni</strong> da eseguire (max 10 per volta). Premi <strong>"Mostra anteprima"</strong>: il sistema calcola automaticamente quali doppioni liberi verranno consumati. L'anteprima mostra anche la <strong>probabilità di successo</strong> per la ricetta scelta.
               </p>
             </div>
 
@@ -2118,10 +2118,10 @@
             <div class="auction-step-item">
               <div class="step-header">
                 <span class="step-num">2</span>
-                <span class="step-title">Controlla gli Ingredienti e Conferma</span>
+                <span class="step-title">Valuta il Rischio e Conferma</span>
               </div>
               <p class="step-desc">
-                L'anteprima mostra esattamente quali carte verranno sacrificate. Se i doppioni sono sufficienti, il pulsante <strong>"Conferma fusione"</strong> si sblocca. La selezione è <strong>automatica e deterministica</strong>: vengono sempre consumate per prime le copie in eccesso acquisite più di recente, preservando sempre almeno una copia per carta. L'operazione è <strong>irreversibile</strong>.
+                La fusione <strong>non è garantita</strong>: ogni tentativo ha una probabilità di fallimento che cresce con la rarità del risultato (Core→Rare 80%, Rare→Elite 60%, Elite→Legendary 40%). Se confermi, gli ingredienti vengono <strong>sempre consumati</strong> anche in caso di fallimento. Con più fusioni, ogni tiro è indipendente: puoi ottenere successi parziali.
               </p>
             </div>
 
@@ -2129,10 +2129,10 @@
             <div class="auction-step-item">
               <div class="step-header">
                 <span class="step-num">3</span>
-                <span class="step-title">Ricevi la Carta e Scoprila</span>
+                <span class="step-title">Scopri il Risultato</span>
               </div>
               <p class="step-desc">
-                La fusione è <strong>atomica</strong>: o riesce completamente o non avviene nulla. Al termine riceverai una carta casuale del tier superiore, estratta in modo uniforme dal pool ordinario (le carte stagionali non sono mai producibili). Comparirà l'animazione di reveal — la stessa delle aperture pacchetto. La nuova carta sarà subito nella tua collezione.
+                Se almeno una fusione riesce, ricevi una carta casuale del tier superiore per ogni tiro vincente, estratta uniformemente dal pool ordinario (le stagionali non sono mai producibili). Comparirà l'animazione di reveal. Se <strong>tutte le fusioni falliscono</strong>, non ottieni nulla: gli ingredienti sono persi per la Democrazia.
               </p>
             </div>
 
@@ -2141,7 +2141,7 @@
           <div class="auction-guide-warning">
             <span style="font-size:1.3rem;">⚠️</span>
             <div>
-              <strong>DIRETTIVA SUPER TERRA:</strong> Solo i <em>doppioni liberi</em> possono essere sacrificati: le copie bloccate in trade o asta attiva sono intoccabili. L'ultima copia di una carta <strong>non è mai consumabile</strong>, anche se tecnicamente è un doppione rispetto al tier. La fusione non genera Super Crediti.
+              <strong>DIRETTIVA SUPER TERRA:</strong> Solo i <em>doppioni liberi</em> possono essere sacrificati: le copie bloccate in trade o asta attiva sono intoccabili. L'ultima copia di una carta <strong>non è mai consumabile</strong>. Gli ingredienti vengono consumati <strong>indipendentemente</strong> dall'esito — il rischio è reale. La fusione non genera Super Crediti.
             </div>
           </div>
         </div>
@@ -2153,9 +2153,9 @@
         <label class="fusion-field" for="fusion-rarity">
           Rarità ingredienti
           <select id="fusion-rarity">
-            <option value="core">Core → Rare (5 carte)</option>
-            <option value="rare">Rare → Elite (5 carte)</option>
-            <option value="elite">Elite → Legendary (6 carte)</option>
+            <option value="core">Core → Rare (5 carte) — 80%</option>
+            <option value="rare">Rare → Elite (5 carte) — 60%</option>
+            <option value="elite">Elite → Legendary (6 carte) — 40%</option>
           </select>
         </label>
         <label class="fusion-field" for="fusion-times">
@@ -2900,9 +2900,15 @@
         };
         const previewList = document.getElementById('fusion-preview-list');
         previewList.replaceChildren();
+
+        // Riga ricetta con probabilità di successo in evidenza
+        const successPct = Math.round((data.recipe.success_rate ?? 1) * 100);
+        const riskColor = successPct >= 75 ? '#4ade80' : successPct >= 55 ? '#facc15' : '#f87171';
         const recipeItem = document.createElement('li');
-        recipeItem.textContent =
-          `${data.recipe.cost * times} ${rarity.toUpperCase()} → ${times} ${data.recipe.to.toUpperCase()} (max ${data.max_times} fusioni disponibili)`;
+        recipeItem.innerHTML =
+          `${data.recipe.cost * times} ${rarity.toUpperCase()} → ${times} ${data.recipe.to.toUpperCase()}
+          &nbsp;<span style="font-weight:700; color:${riskColor};">⚡ ${successPct}% successo</span>
+          &nbsp;<span style="color:var(--muted);">(max ${data.max_times} fusioni disponibili)</span>`;
         previewList.appendChild(recipeItem);
 
         for (const item of data.selection) {
@@ -2915,7 +2921,10 @@
 
         if (data.can_fuse) {
           document.getElementById('fusion-confirm-button').hidden = false;
-          setFusionStatus('Controlla gli ingredienti e conferma: l’operazione è irreversibile.');
+          const riskNote = successPct < 100
+            ? ` Rischio ${100 - successPct}% di perdere gli ingredienti.`
+            : '';
+          setFusionStatus(`Controlla gli ingredienti e conferma: l'operazione è irreversibile.${riskNote}`);
         } else {
           const missing = data.missing > 0 ? ` Mancano ${data.missing} copie.` : '';
           setFusionStatus(`Doppioni liberi insufficienti.${missing}`);
@@ -2970,10 +2979,30 @@
         }
 
         await fetchUserProfileAndCollection();
-        currentToken = data.token;
         resetFusionPreview();
-        switchView('intro');
-        await validateToken(currentToken);
+
+        const succeeded = data.succeeded_count ?? (data.outputs?.length ?? 0);
+        const attempted = data.times ?? 1;
+
+        if (succeeded === 0) {
+          // Fallimento totale: nessuna carta prodotta
+          setFusionStatus(
+            `☠️ Fusione fallita — ${attempted} tentativ${attempted === 1 ? 'o consumato' : 'i consumati'} senza risultato. Gli ingredienti sono stati sacrificati per la Democrazia.`
+          );
+        } else if (succeeded < attempted) {
+          // Successo parziale: mostra le carte vinte poi il reveal
+          setFusionStatus(
+            `⚡ Successo parziale: ${succeeded}/${attempted} fusioni riuscite. Rivelazione in corso...`
+          );
+          currentToken = data.token;
+          switchView('intro');
+          await validateToken(currentToken);
+        } else {
+          // Successo totale
+          currentToken = data.token;
+          switchView('intro');
+          await validateToken(currentToken);
+        }
       } catch (error) {
         console.error('Errore esecuzione fusione:', error);
         setFusionStatus('Risposta non ricevuta. Puoi riprovare con la stessa richiesta per recuperare il risultato.');
