@@ -2088,6 +2088,66 @@
       <h1 class="intro-title"><span>Riciclo Democratico</span>Fusione Carte</h1>
       <p class="intro-subtitle">Consuma solo doppioni liberi. Le carte stagionali non possono essere ottenute come risultato.</p>
     </div>
+
+    <!-- Accordion: Guida Fusione -->
+    <div class="auction-guide-wrapper">
+      <div class="auction-guide-box">
+        <button class="auction-guide-toggle-btn" id="btn-toggle-fusion-guide" onclick="toggleFusionGuide()">
+          <span class="guide-toggle-left">
+            <span class="guide-badge">MANUALE TATTICO</span>
+            <span class="guide-toggle-title">♻️ Come Funziona la Fusione? Guida Rapida in 3 Passaggi</span>
+          </span>
+          <span class="guide-toggle-arrow" id="fusion-guide-toggle-arrow">▼</span>
+        </button>
+
+        <div class="auction-guide-body" id="fusion-guide-body" style="display: none;">
+          <div class="auction-steps-grid">
+
+            <!-- STEP 1 -->
+            <div class="auction-step-item">
+              <div class="step-header">
+                <span class="step-num">1</span>
+                <span class="step-title">Scegli il Tier e Richiedi l'Anteprima</span>
+              </div>
+              <p class="step-desc">
+                Accedi con Discord, seleziona la <strong>rarità degli ingredienti</strong> (Core, Rare o Elite) e il <strong>numero di fusioni</strong> che vuoi eseguire (max 10 per volta). Premi <strong>"Mostra anteprima"</strong>: il sistema calcolerà automaticamente quali doppioni liberi verranno consumati, partendo da quelli di cui hai più copie in eccesso.
+              </p>
+            </div>
+
+            <!-- STEP 2 -->
+            <div class="auction-step-item">
+              <div class="step-header">
+                <span class="step-num">2</span>
+                <span class="step-title">Controlla gli Ingredienti e Conferma</span>
+              </div>
+              <p class="step-desc">
+                L'anteprima mostra esattamente quali carte verranno sacrificate. Se i doppioni sono sufficienti, il pulsante <strong>"Conferma fusione"</strong> si sblocca. La selezione è <strong>automatica e deterministica</strong>: vengono sempre consumate per prime le copie in eccesso acquisite più di recente, preservando sempre almeno una copia per carta. L'operazione è <strong>irreversibile</strong>.
+              </p>
+            </div>
+
+            <!-- STEP 3 -->
+            <div class="auction-step-item">
+              <div class="step-header">
+                <span class="step-num">3</span>
+                <span class="step-title">Ricevi la Carta e Scoprila</span>
+              </div>
+              <p class="step-desc">
+                La fusione è <strong>atomica</strong>: o riesce completamente o non avviene nulla. Al termine riceverai una carta casuale del tier superiore, estratta in modo uniforme dal pool ordinario (le carte stagionali non sono mai producibili). Comparirà l'animazione di reveal — la stessa delle aperture pacchetto. La nuova carta sarà subito nella tua collezione.
+              </p>
+            </div>
+
+          </div>
+
+          <div class="auction-guide-warning">
+            <span style="font-size:1.3rem;">⚠️</span>
+            <div>
+              <strong>DIRETTIVA SUPER TERRA:</strong> Solo i <em>doppioni liberi</em> possono essere sacrificati: le copie bloccate in trade o asta attiva sono intoccabili. L'ultima copia di una carta <strong>non è mai consumabile</strong>, anche se tecnicamente è un doppione rispetto al tier. La fusione non genera Super Crediti.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <section class="fusion-panel" aria-label="Configurazione fusione">
       <div class="fusion-controls">
         <label class="fusion-field" for="fusion-rarity">
@@ -3283,6 +3343,15 @@
     function toggleAuctionGuide() {
       const body = document.getElementById('auction-guide-body');
       const arrow = document.getElementById('guide-toggle-arrow');
+      if (!body) return;
+      const isOpen = body.style.display !== 'none';
+      body.style.display = isOpen ? 'none' : 'flex';
+      if (arrow) arrow.classList.toggle('open', !isOpen);
+    }
+
+    function toggleFusionGuide() {
+      const body = document.getElementById('fusion-guide-body');
+      const arrow = document.getElementById('fusion-guide-toggle-arrow');
       if (!body) return;
       const isOpen = body.style.display !== 'none';
       body.style.display = isOpen ? 'none' : 'flex';
