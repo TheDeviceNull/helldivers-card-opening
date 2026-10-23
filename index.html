@@ -1044,6 +1044,10 @@
       #screen-auction {
         padding-top: 7rem;
       }
+
+      #screen-fusion {
+        padding-top: 7rem;
+      }
     }
 
     /* ===== SCHERMATA ASTA ===== */
@@ -1056,6 +1060,86 @@
       padding: 6rem 1rem 4rem 1rem;
       width: 100%;
       max-width: 1100px;
+    }
+
+    /* ===== SCHERMATA FUSIONE ===== */
+    #screen-fusion {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+      z-index: 1;
+      padding: 6rem 1rem 4rem;
+      width: 100%;
+      max-width: 900px;
+    }
+
+    .fusion-panel {
+      width: 100%;
+      padding: 1.5rem;
+      border: 1px solid rgba(245, 196, 0, 0.3);
+      border-radius: 8px;
+      background: rgba(13, 31, 60, 0.72);
+      color: var(--text);
+    }
+
+    .fusion-controls {
+      display: flex;
+      align-items: end;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .fusion-field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      color: var(--muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .fusion-field select,
+    .fusion-field input {
+      min-width: 150px;
+      padding: 0.7rem;
+      border: 1px solid rgba(245, 196, 0, 0.4);
+      border-radius: 4px;
+      background: var(--darker);
+      color: var(--text);
+      font: inherit;
+    }
+
+    .fusion-action {
+      padding: 0.75rem 1.25rem;
+      border: 1px solid var(--yellow);
+      border-radius: 4px;
+      background: var(--yellow);
+      color: var(--darker);
+      font: 700 0.9rem 'Barlow Condensed', sans-serif;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .fusion-action:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    #fusion-status {
+      min-height: 1.5rem;
+      margin-top: 1rem;
+      color: var(--text);
+      text-align: center;
+    }
+
+    #fusion-preview-list {
+      margin: 1rem 0 0;
+      padding-left: 1.5rem;
+      line-height: 1.8;
     }
 
     .auction-header {
@@ -1866,6 +1950,9 @@
       <button class="btn-nav-action" id="btn-show-auction" onclick="switchView('auction')">
         <span class="btn-emoji">🏛️</span> Auction
       </button>
+      <button class="btn-nav-action" id="btn-show-fusion" onclick="switchView('fusion')">
+        <span class="btn-emoji">♻️</span> Fusione
+      </button>
       <div id="auth-container">
         <button class="btn-nav-action btn-discord-login" onclick="loginWithDiscord()">
           <svg style="width:16px; height:16px; fill:currentColor;" viewBox="0 0 127.14 96.36">
@@ -1993,6 +2080,34 @@
     <div class="cards-grid" id="collection-grid">
       <!-- Popolato da JS -->
     </div>
+  </div>
+
+  <!-- SCHERMATA: Fusione carte -->
+  <div id="screen-fusion">
+    <div class="collection-header">
+      <h1 class="intro-title"><span>Riciclo Democratico</span>Fusione Carte</h1>
+      <p class="intro-subtitle">Consuma solo doppioni liberi. Le carte stagionali non possono essere ottenute come risultato.</p>
+    </div>
+    <section class="fusion-panel" aria-label="Configurazione fusione">
+      <div class="fusion-controls">
+        <label class="fusion-field" for="fusion-rarity">
+          Rarità ingredienti
+          <select id="fusion-rarity">
+            <option value="core">Core → Rare (5 carte)</option>
+            <option value="rare">Rare → Elite (5 carte)</option>
+            <option value="elite">Elite → Legendary (6 carte)</option>
+          </select>
+        </label>
+        <label class="fusion-field" for="fusion-times">
+          Fusioni
+          <input id="fusion-times" type="number" min="1" max="10" value="1">
+        </label>
+        <button class="fusion-action" id="fusion-preview-button" type="button" onclick="loadFusionPreview()">Mostra anteprima</button>
+        <button class="fusion-action" id="fusion-confirm-button" type="button" onclick="executeFusion()" hidden>Conferma fusione</button>
+      </div>
+      <div id="fusion-status" role="status" aria-live="polite">Accedi con Discord per fondere le carte.</div>
+      <ul id="fusion-preview-list"></ul>
+    </section>
   </div>
 
   <!-- SCHERMATA 5: Auction House -->
@@ -2492,6 +2607,7 @@
     let allCatalogCards = [];
     let userOwnedCollection = [];
     let currentCollectionFilter = 'all';
+    let currentFusionPreview = null;
 
     // ===== INIZIALIZZAZIONE =====
     window.addEventListener('DOMContentLoaded', async () => {
@@ -2527,6 +2643,7 @@
       document.getElementById('screen-loading').style.display = 'none';
       document.getElementById('screen-error').style.display = 'none';
       document.getElementById('screen-collection').style.display = 'none';
+      document.getElementById('screen-fusion').style.display = 'none';
       document.getElementById('screen-auction').style.display = 'none';
 
       if (viewName === 'intro') {
@@ -2534,6 +2651,14 @@
       } else if (viewName === 'collection') {
         document.getElementById('screen-collection').style.display = 'flex';
         loadCollectionData();
+      } else if (viewName === 'fusion') {
+        document.getElementById('screen-fusion').style.display = 'flex';
+        resetFusionPreview();
+        if (!userSessionToken) {
+          setFusionStatus('Accedi con Discord per usare la fusione.');
+        } else {
+          setFusionStatus('Scegli il tier e richiedi una preview prima di confermare.');
+        }
       } else if (viewName === 'auction') {
         document.getElementById('screen-auction').style.display = 'flex';
         loadAuctionList();
@@ -2645,6 +2770,155 @@
         await fetchUserProfileAndCollection();
       } else {
         renderCollectionGrid();
+      }
+    }
+
+    function setFusionStatus(message) {
+      document.getElementById('fusion-status').textContent = message;
+    }
+
+    function resetFusionPreview() {
+      currentFusionPreview = null;
+      document.getElementById('fusion-preview-list').replaceChildren();
+      document.getElementById('fusion-confirm-button').hidden = true;
+    }
+
+    function getFusionErrorMessage(code) {
+      const messages = {
+        unauthorized: 'La sessione Discord è scaduta. Accedi di nuovo.',
+        invalid_request: 'La richiesta non è valida. Controlla la quantità selezionata.',
+        invalid_recipe: 'Questa ricetta non è disponibile.',
+        fusion_disabled: 'La fusione è temporaneamente disabilitata.',
+        not_enough_duplicates: 'Non hai abbastanza doppioni liberi per questa fusione.',
+        selection_changed: 'La collezione è cambiata. Richiedi una nuova preview.',
+        idempotency_conflict: 'La richiesta è in conflitto con un’operazione precedente.',
+        empty_target_pool: 'Non ci sono carte disponibili per il risultato richiesto.',
+        rate_limited: 'Hai effettuato troppe richieste. Attendi un minuto e riprova.',
+        internal_error: 'Errore del server durante la fusione.'
+      };
+      return messages[code] || 'Impossibile completare la richiesta di fusione.';
+    }
+
+    async function loadFusionPreview() {
+      resetFusionPreview();
+      if (!userSessionToken) {
+        setFusionStatus('Accedi con Discord prima di richiedere una preview.');
+        return;
+      }
+
+      const rarity = document.getElementById('fusion-rarity').value;
+      const times = Number(document.getElementById('fusion-times').value);
+      if (!Number.isInteger(times) || times < 1 || times > 10) {
+        setFusionStatus('Il numero di fusioni deve essere compreso tra 1 e 10.');
+        return;
+      }
+
+      const button = document.getElementById('fusion-preview-button');
+      button.disabled = true;
+      setFusionStatus('Calcolo dei doppioni liberi...');
+      try {
+        const response = await fetchApi('/fusion/preview', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${userSessionToken}`
+          },
+          body: JSON.stringify({ rarity, times })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.ok) {
+          if (response.status === 401) logoutDiscord();
+          setFusionStatus(getFusionErrorMessage(data.error));
+          return;
+        }
+
+        currentFusionPreview = {
+          rarity,
+          times,
+          requestId: crypto.randomUUID(),
+          selection: data.selection
+        };
+        const previewList = document.getElementById('fusion-preview-list');
+        previewList.replaceChildren();
+        const recipeItem = document.createElement('li');
+        recipeItem.textContent =
+          `${data.recipe.cost * times} ${rarity.toUpperCase()} → ${times} ${data.recipe.to.toUpperCase()} (max ${data.max_times} fusioni disponibili)`;
+        previewList.appendChild(recipeItem);
+
+        for (const item of data.selection) {
+          const card = allCatalogCards.find(candidate => candidate.id === item.card_id)
+            || userOwnedCollection.find(candidate => candidate.card_id === item.card_id);
+          const listItem = document.createElement('li');
+          listItem.textContent = `${item.qty} × ${card ? card.name : item.card_id}`;
+          previewList.appendChild(listItem);
+        }
+
+        if (data.can_fuse) {
+          document.getElementById('fusion-confirm-button').hidden = false;
+          setFusionStatus('Controlla gli ingredienti e conferma: l’operazione è irreversibile.');
+        } else {
+          const missing = data.missing > 0 ? ` Mancano ${data.missing} copie.` : '';
+          setFusionStatus(`Doppioni liberi insufficienti.${missing}`);
+        }
+      } catch (error) {
+        console.error('Errore richiesta preview fusione:', error);
+        setFusionStatus('Impossibile contattare il server. Riprova più tardi.');
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function executeFusion() {
+      if (!userSessionToken || !currentFusionPreview) {
+        setFusionStatus('Richiedi prima una nuova preview della fusione.');
+        return;
+      }
+
+      const rarity = document.getElementById('fusion-rarity').value;
+      const times = Number(document.getElementById('fusion-times').value);
+      if (rarity !== currentFusionPreview.rarity || times !== currentFusionPreview.times) {
+        resetFusionPreview();
+        setFusionStatus('I parametri sono cambiati. Richiedi una nuova preview.');
+        return;
+      }
+
+      const button = document.getElementById('fusion-confirm-button');
+      button.disabled = true;
+      setFusionStatus('Fusione in corso...');
+      try {
+        const response = await fetchApi('/fusion/execute', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${userSessionToken}`
+          },
+          body: JSON.stringify({
+            request_id: currentFusionPreview.requestId,
+            rarity,
+            times,
+            selection: currentFusionPreview.selection
+          })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.ok) {
+          if (response.status === 401) logoutDiscord();
+          if (data.error === 'selection_changed' || data.error === 'idempotency_conflict') {
+            resetFusionPreview();
+          }
+          setFusionStatus(getFusionErrorMessage(data.error));
+          return;
+        }
+
+        await fetchUserProfileAndCollection();
+        currentToken = data.token;
+        resetFusionPreview();
+        switchView('intro');
+        await validateToken(currentToken);
+      } catch (error) {
+        console.error('Errore esecuzione fusione:', error);
+        setFusionStatus('Risposta non ricevuta. Puoi riprovare con la stessa richiesta per recuperare il risultato.');
+      } finally {
+        button.disabled = false;
       }
     }
 
