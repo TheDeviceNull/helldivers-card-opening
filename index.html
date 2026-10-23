@@ -1112,6 +1112,13 @@
       font: inherit;
     }
 
+    .fusion-field select:disabled,
+    .fusion-field input:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
     .fusion-action {
       padding: 0.75rem 1.25rem;
       border: 1px solid var(--yellow);
@@ -2162,6 +2169,12 @@
           Serie
           <select id="fusion-series"></select>
         </label>
+        <label class="fusion-field" for="fusion-card" id="fusion-card-field">
+          Carta specifica (solo 1 fusione)
+          <select id="fusion-card">
+            <option value="auto">Auto (maggior eccedenza)</option>
+          </select>
+        </label>
         <label class="fusion-field" for="fusion-times">
           Fusioni
           <input id="fusion-times" type="number" min="1" max="10" value="1">
@@ -2691,7 +2704,22 @@
 
       document.getElementById('fusion-rarity').addEventListener('change', () => {
         resetFusionPreview();
+        resetFusionCardOptions();
         populateFusionSeriesOptions();
+      });
+
+      document.getElementById('fusion-series').addEventListener('change', () => {
+        resetFusionPreview();
+        resetFusionCardOptions();
+      });
+
+      document.getElementById('fusion-times').addEventListener('input', () => {
+        resetFusionPreview();
+        updateFusionCardSelectState();
+      });
+
+      document.getElementById('fusion-card').addEventListener('change', () => {
+        resetFusionPreview();
       });
 
       // 2. Se è presente un token di apertura bustina
@@ -2853,6 +2881,30 @@
       document.getElementById('fusion-confirm-button').hidden = true;
     }
 
+    function resetFusionCardOptions() {
+      const select = document.getElementById('fusion-card');
+      if (!select) return;
+      select.replaceChildren();
+      const opt = document.createElement('option');
+      opt.value = 'auto';
+      opt.textContent = 'Auto (maggior eccedenza)';
+      select.appendChild(opt);
+    }
+
+    function updateFusionCardSelectState() {
+      const times = Number(document.getElementById('fusion-times').value);
+      const cardSelect = document.getElementById('fusion-card');
+      const cardField = document.getElementById('fusion-card-field');
+      if (times > 1) {
+        cardSelect.disabled = true;
+        cardSelect.value = 'auto';
+        if (cardField) cardField.title = 'In batch (multi-fusione) la carta viene selezionata automaticamente dal server.';
+      } else {
+        cardSelect.disabled = false;
+        if (cardField) cardField.title = '';
+      }
+    }
+
     async function populateFusionSeriesOptions() {
       if (allCatalogCards.length === 0) {
         try {
@@ -2888,7 +2940,7 @@
     function getFusionErrorMessage(code) {
       const messages = {
         unauthorized: 'La sessione Discord è scaduta. Accedi di nuovo.',
-        invalid_request: 'La richiesta non è valida. Controlla la quantità selezionata.',
+        invalid_request: 'La richiesta non è valida. Controlla la quantità o la carta selezionata.',
         invalid_recipe: 'Questa ricetta non è disponibile.',
         fusion_disabled: 'La fusione è temporaneamente disabilitata.',
         not_enough_duplicates: 'Non hai abbastanza doppioni liberi per questa fusione.',
@@ -2911,6 +2963,9 @@
       const rarity = document.getElementById('fusion-rarity').value;
       const series = document.getElementById('fusion-series').value;
       const times = Number(document.getElementById('fusion-times').value);
+      const cardSelect = document.getElementById('fusion-card');
+      const cardId = (times === 1 && cardSelect && cardSelect.value !== 'auto') ? cardSelect.value : null;
+
       if (!series) {
         setFusionStatus('Nessuna serie disponibile per questa rarità.');
         return;
@@ -2924,13 +2979,15 @@
       button.disabled = true;
       setFusionStatus('Calcolo dei doppioni liberi...');
       try {
+        const reqBody = { rarity, series, times };
+        if (cardId) reqBody.card_id = cardId;
         const response = await fetchApi('/fusion/preview', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${userSessionToken}`
           },
-          body: JSON.stringify({ rarity, series, times })
+          body: JSON.stringify(reqBody)
         });
         const data = await response.json();
         if (!response.ok || !data.ok) {
@@ -2939,10 +2996,30 @@
           return;
         }
 
+        // Popola la tendina delle carte con le eligible_cards se times === 1
+        if (times === 1 && data.eligible_cards && cardSelect) {
+          const previousSelected = cardSelect.value;
+          cardSelect.replaceChildren();
+          const autoOpt = document.createElement('option');
+          autoOpt.value = 'auto';
+          autoOpt.textContent = 'Auto (maggior eccedenza)';
+          cardSelect.appendChild(autoOpt);
+          for (const c of data.eligible_cards) {
+            const opt = document.createElement('option');
+            opt.value = c.card_id;
+            opt.textContent = `${c.name} (${c.excess} scarti)`;
+            cardSelect.appendChild(opt);
+          }
+          if ([...cardSelect.options].some(o => o.value === previousSelected)) {
+            cardSelect.value = previousSelected;
+          }
+        }
+
         currentFusionPreview = {
           rarity,
           series,
           times,
+          cardId: cardId || 'auto',
           requestId: crypto.randomUUID(),
           selection: data.selection
         };
@@ -2954,7 +3031,7 @@
         const riskColor = successPct >= 75 ? '#4ade80' : successPct >= 55 ? '#facc15' : '#f87171';
         const recipeItem = document.createElement('li');
         recipeItem.innerHTML =
-          `${data.recipe.cost * times} ${rarity.toUpperCase()} → ${times} ${data.recipe.to.toUpperCase()}
+          `${data.recipe.cost * times} ${rarity.toUpperCase()} (stessa carta) → ${times} ${data.recipe.to.toUpperCase()}
           &nbsp;<span style="font-weight:700; color:${riskColor};">⚡ ${successPct}% successo</span>
           &nbsp;<span style="color:var(--muted);">(max ${data.max_times} fusioni disponibili)</span>`;
         previewList.appendChild(recipeItem);
@@ -2979,7 +3056,7 @@
           const altNote = altSeries ? ` Fusione disponibile anche per: ${altSeries}.` : '';
           setFusionStatus(`Controlla gli ingredienti e conferma: l'operazione è irreversibile.${riskNote}${altNote}`);
         } else {
-          const missing = data.missing > 0 ? ` Mancano ${data.missing} copie.` : '';
+          const missing = data.missing > 0 ? ` Mancano ${data.missing} copie della stessa carta.` : '';
           setFusionStatus(`Doppioni liberi insufficienti.${missing}`);
         }
       } catch (error) {
@@ -2999,7 +3076,13 @@
       const rarity = document.getElementById('fusion-rarity').value;
       const series = document.getElementById('fusion-series').value;
       const times = Number(document.getElementById('fusion-times').value);
-      if (rarity !== currentFusionPreview.rarity || series !== currentFusionPreview.series || times !== currentFusionPreview.times) {
+      const currentCardVal = (times === 1 && document.getElementById('fusion-card')?.value) || 'auto';
+      if (
+        rarity !== currentFusionPreview.rarity ||
+        series !== currentFusionPreview.series ||
+        times !== currentFusionPreview.times ||
+        (times === 1 && currentCardVal !== currentFusionPreview.cardId)
+      ) {
         resetFusionPreview();
         setFusionStatus('I parametri sono cambiati. Richiedi una nuova preview.');
         return;
