@@ -2883,7 +2883,7 @@
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${userSessionToken}`
           },
-          body: JSON.stringify({ rarity, times })
+          body: JSON.stringify({ rarity, series, times })
         });
         const data = await response.json();
         if (!response.ok || !data.ok) {
@@ -2894,6 +2894,7 @@
 
         currentFusionPreview = {
           rarity,
+          series,
           times,
           requestId: crypto.randomUUID(),
           selection: data.selection
@@ -2924,7 +2925,12 @@
           const riskNote = successPct < 100
             ? ` Rischio ${100 - successPct}% di perdere gli ingredienti.`
             : '';
-          setFusionStatus(`Controlla gli ingredienti e conferma: l'operazione è irreversibile.${riskNote}`);
+          // Mostra le serie alternative disponibili (se presenti)
+          const altSeries = (data.available_series || [])
+            .filter(s => s !== series)
+            .join(', ');
+          const altNote = altSeries ? ` Fusione disponibile anche per: ${altSeries}.` : '';
+          setFusionStatus(`Controlla gli ingredienti e conferma: l'operazione è irreversibile.${riskNote}${altNote}`);
         } else {
           const missing = data.missing > 0 ? ` Mancano ${data.missing} copie.` : '';
           setFusionStatus(`Doppioni liberi insufficienti.${missing}`);
@@ -2944,8 +2950,9 @@
       }
 
       const rarity = document.getElementById('fusion-rarity').value;
+      const series = document.getElementById('fusion-series').value;
       const times = Number(document.getElementById('fusion-times').value);
-      if (rarity !== currentFusionPreview.rarity || times !== currentFusionPreview.times) {
+      if (rarity !== currentFusionPreview.rarity || series !== currentFusionPreview.series || times !== currentFusionPreview.times) {
         resetFusionPreview();
         setFusionStatus('I parametri sono cambiati. Richiedi una nuova preview.');
         return;
@@ -2964,6 +2971,7 @@
           body: JSON.stringify({
             request_id: currentFusionPreview.requestId,
             rarity,
+            series,
             times,
             selection: currentFusionPreview.selection
           })
