@@ -2467,6 +2467,30 @@
   <p class="md-footer">Managed Democracy © Super Earth Armed Forces</p>
 
   <script>
+    // ===== SICUREZZA: escape e validazione di dati non fidati =====
+    const esc = (v) => String(v ?? '').replace(/[&<>"']/g,
+      c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    // Intero sicuro per prezzi/offerte/contatori
+    const num = (v, fallback = 0) => {
+      const n = Number(v);
+      return Number.isFinite(n) ? Math.trunc(n) : fallback;
+    };
+
+    // Discord snowflake: solo 17-20 cifre, altrimenti stringa vuota
+    const safeSnowflake = (v) => /^\d{17,20}$/.test(String(v ?? '')) ? String(v) : '';
+
+    // Placeholder carta asta via DOM sicuro (nessun innerHTML)
+    function buildAuctionPlaceholder(auction) {
+      const wrap = document.createElement('div');
+      wrap.className = 'auction-card-preview-placeholder';
+      const n = document.createElement('div');
+      n.className = 'ph-num';
+      n.textContent = String(auction?.card_id ?? '?').split('-')[0];
+      wrap.appendChild(n);
+      return wrap;
+    }
+
     // ===== CONFIGURAZIONE BACKEND =====
     // Sostituisci con il tuo URL Cloudflare Tunnel finale
     const API_BASE_URL = 'https://specified-ton-numerical-types.trycloudflare.com';
@@ -2691,11 +2715,26 @@
       const urlParams = new URLSearchParams(window.location.search);
       currentToken = urlParams.get('t');
       const oauthCode = urlParams.get('code');
+      const oauthState = urlParams.get('state');
+      const oauthError = urlParams.get('error');
+      let pendingAuthNotice = null;
 
       // 1. Gestione callback OAuth2 se presente nell'URL
-      if (oauthCode) {
-        window.history.replaceState({}, document.title, window.location.pathname);
-        await handleOAuthCallback(oauthCode);
+      if (oauthCode || oauthError) {
+        urlParams.delete('code');
+        urlParams.delete('state');
+        urlParams.delete('error');
+        const cleanQuery = urlParams.toString() ? `?${urlParams.toString()}` : '';
+        window.history.replaceState({}, document.title, window.location.pathname + cleanQuery);
+
+        if (oauthError) {
+          localStorage.removeItem(OAUTH_STATE_KEY);
+          pendingAuthNotice = 'Accesso Discord annullato.';
+        } else if (!consumeOAuthState(oauthState)) {
+          pendingAuthNotice = 'Verifica di sicurezza del login fallita. Riprova ad accedere.';
+        } else {
+          await handleOAuthCallback(oauthCode);
+        }
       } else if (userSessionToken) {
         await fetchUserProfileAndCollection();
       }
@@ -2729,6 +2768,10 @@
       } else {
         // Se non c'è token bustina, vai alla collezione
         switchView('collection');
+      }
+
+      if (pendingAuthNotice) {
+        alert(pendingAuthNotice);
       }
     });
 
@@ -2764,11 +2807,33 @@
     }
 
     // ===== DISCORD OAUTH2 FLUSSO =====
+    const OAUTH_STATE_KEY = 'hd2_oauth_state';
+    const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
+
     function loginWithDiscord() {
+      const bytes = crypto.getRandomValues(new Uint8Array(16));
+      const state = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+      try {
+        localStorage.setItem(OAUTH_STATE_KEY, JSON.stringify({ state, ts: Date.now() }));
+      } catch {
+        alert('Impossibile avviare il login: storage del browser non disponibile.');
+        return;
+      }
       const scope = encodeURIComponent('identify');
       const redirectUri = encodeURIComponent(DISCORD_REDIRECT_URI);
-      const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&response_type=code&redirect_uri=${redirectUri}&scope=${scope}`;
+      const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&response_type=code&redirect_uri=${redirectUri}&scope=${scope}&state=${state}`;
       window.location.href = authUrl;
+    }
+
+    function consumeOAuthState(returned) {
+      let stored = null;
+      try {
+        stored = JSON.parse(localStorage.getItem(OAUTH_STATE_KEY) || 'null');
+        localStorage.removeItem(OAUTH_STATE_KEY);
+      } catch { /* storage corrotto */ }
+      if (!stored || typeof stored.state !== 'string' || !returned) return false;
+      if (Date.now() - stored.ts > OAUTH_STATE_TTL_MS) return false;
+      return stored.state === returned;
     }
 
     async function handleOAuthCallback(code) {
@@ -2827,13 +2892,16 @@
     function updateAuthUI() {
       const container = document.getElementById('auth-container');
       if (currentUserProfile) {
-        const avatarUrl = currentUserProfile.avatar
+        const name = esc(currentUserProfile.global_name || currentUserProfile.username);
+        const uidOk = /^\d+$/.test(String(currentUserProfile.id ?? ''));
+        const avOk = /^\w+$/.test(String(currentUserProfile.avatar ?? ''));
+        const avatarUrl = (uidOk && avOk)
           ? `https://cdn.discordapp.com/avatars/${currentUserProfile.id}/${currentUserProfile.avatar}.png`
           : `./assets/superearth.png`;
         container.innerHTML = `
           <div class="user-profile-badge">
-            <img class="user-avatar" src="${avatarUrl}" alt="${currentUserProfile.username}">
-            <span class="user-name">${currentUserProfile.global_name || currentUserProfile.username}</span>
+            <img class="user-avatar" src="${avatarUrl}" alt="${name}">
+            <span class="user-name">${name}</span>
             <button onclick="logoutDiscord()" style="background:none; border:none; color:var(--muted); cursor:pointer; font-size:0.75rem; margin-left:4px;" title="Disconnetti">✕</button>
           </div>
         `;
@@ -3027,13 +3095,17 @@
         previewList.replaceChildren();
 
         // Riga ricetta con probabilità di successo in evidenza
-        const successPct = Math.round((data.recipe.success_rate ?? 1) * 100);
+        const successPct = num(Math.round((data.recipe.success_rate ?? 1) * 100));
         const riskColor = successPct >= 75 ? '#4ade80' : successPct >= 55 ? '#facc15' : '#f87171';
         const recipeItem = document.createElement('li');
+        const costTimes = num(data.recipe.cost) * num(times);
+        const toRarity = esc(data.recipe.to ?? '').toUpperCase();
+        const fromRarity = esc(rarity ?? '').toUpperCase();
+        const maxTimes = num(data.max_times);
         recipeItem.innerHTML =
-          `${data.recipe.cost * times} ${rarity.toUpperCase()} (stessa carta) → ${times} ${data.recipe.to.toUpperCase()}
+          `${costTimes} ${fromRarity} (stessa carta) → ${num(times)} ${toRarity}
           &nbsp;<span style="font-weight:700; color:${riskColor};">⚡ ${successPct}% successo</span>
-          &nbsp;<span style="color:var(--muted);">(max ${data.max_times} fusioni disponibili)</span>`;
+          &nbsp;<span style="color:var(--muted);">(max ${maxTimes} fusioni disponibili)</span>`;
         previewList.appendChild(recipeItem);
 
         for (const item of data.selection) {
@@ -3209,31 +3281,51 @@
 
     function buildCollectionCardElement(card, isOwned, copies) {
       const el = document.createElement('div');
-      const isRare = ['rare', 'elite', 'legendary', 'rara', 'leggendaria'].includes(card.rarity.toLowerCase());
+      const isRare = ['rare', 'elite', 'legendary', 'rara', 'leggendaria'].includes(String(card.rarity || '').toLowerCase());
       el.className = `card ${isRare ? 'rare' : 'common'} ${isOwned ? '' : 'locked'}`;
+
+      const safeCopies = num(copies);
+      const safeName = esc(card.name);
+      const safeNum = esc(card.num || '000');
+      const safeRarity = esc(card.rarity || 'comune').toUpperCase();
 
       // Usa s=${userSessionToken} o t=${currentToken} per autenticare la risorsa immagine
       const tokenParam = userSessionToken ? `s=${encodeURIComponent(userSessionToken)}` : (currentToken ? `t=${encodeURIComponent(currentToken)}` : '');
       const imgUrl = `${activeApiBaseUrl}/collection-card-image?file=${encodeURIComponent(card.id)}&${tokenParam}`;
 
       el.innerHTML = `
-        ${copies > 1 ? `<span class="copies-badge">x${copies}</span>` : ''}
+        ${safeCopies > 1 ? `<span class="copies-badge">x${safeCopies}</span>` : ''}
         <div class="card-img-wrapper">
-          ${isOwned ? `<img src="${imgUrl}" alt="${card.name}" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">` : ''}
+          ${isOwned ? `<img src="${esc(imgUrl)}" alt="${safeName}">` : ''}
 
           <div class="card-placeholder" ${isOwned ? 'style="display:none"' : ''}>
-            <div class="card-number">${card.num || '000'}</div>
-            ${isOwned ? `<div class="card-codename">${card.name}</div>` : ''}
+            <div class="card-number">${safeNum}</div>
+            ${isOwned ? `<div class="card-codename">${safeName}</div>` : ''}
           </div>
           ${isRare && isOwned ? '<div class="rare-shimmer"></div>' : ''}
         </div>
         <div class="card-footer">
           <div class="card-info-group">
-            <span class="card-name">${isOwned ? card.name : '???'}</span>
-            <span class="rarity-badge badge-${isRare ? 'rara' : 'comune'}">${card.rarity.toUpperCase()}</span>
+            <span class="card-name">${isOwned ? safeName : '???'}</span>
+            <span class="rarity-badge badge-${isRare ? 'rara' : 'comune'}">${safeRarity}</span>
           </div>
         </div>
       `;
+
+      if (isOwned) {
+        const imgEl = el.querySelector('img');
+        if (imgEl) {
+          const onImgError = () => {
+            imgEl.style.display = 'none';
+            if (imgEl.nextElementSibling) imgEl.nextElementSibling.style.display = 'flex';
+          };
+          if (imgEl.complete && imgEl.naturalWidth === 0) {
+            onImgError();
+          } else {
+            imgEl.addEventListener('error', onImgError, { once: true });
+          }
+        }
+      }
 
       // Interattività per carte possedute
       if (isOwned) {
@@ -3273,7 +3365,7 @@
     async function validateToken(token) {
       showLoading(true);
       try {
-        const response = await fetchApi(`/validate?t=${token}`);
+        const response = await fetchApi(`/validate?t=${encodeURIComponent(token)}`);
         const data = await response.json();
 
         if (data.valid) {
@@ -3370,24 +3462,29 @@
 
     function buildCard(card) {
       const el = document.createElement('div');
-      const isRare = ['rare', 'elite', 'legendary', 'rara', 'leggendaria'].includes(card.rarity);
+      const isRare = ['rare', 'elite', 'legendary', 'rara', 'leggendaria'].includes(String(card.rarity || '').toLowerCase());
       el.className = `card ${isRare ? 'rare' : 'common'}`;
+
+      const cardName = esc(card.name);
+      const cardNum = esc(card.num);
+      const cardRarity = esc(card.rarity || 'comune').toUpperCase();
 
       let cardContent = '';
       if (card.isMock) {
         cardContent = `
           <div class="card-placeholder">
-            <div class="card-number">${card.num}</div>
+            <div class="card-number">${cardNum}</div>
             <div class="card-codename">MOCKUP</div>
           </div>
         `;
       } else {
-        const imgUrl = `${activeApiBaseUrl}/card-image?t=${currentToken}&file=${encodeURIComponent(card.id)}`;
+        const safeToken = encodeURIComponent(currentToken ?? '');
+        const imgUrl = `${activeApiBaseUrl}/card-image?t=${safeToken}&file=${encodeURIComponent(card.id)}`;
         cardContent = `
-          <img src="${imgUrl}" alt="${card.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <img src="${esc(imgUrl)}" alt="${cardName}">
           <div class="card-placeholder" style="display:none">
-            <div class="card-number">${card.num}</div>
-            <div class="card-codename">${card.name}</div>
+            <div class="card-number">${cardNum}</div>
+            <div class="card-codename">${cardName}</div>
           </div>
         `;
       }
@@ -3399,8 +3496,8 @@
       </div>
       <div class="card-footer">
         <div class="card-info-group">
-          <span class="card-name">${card.name}</span>
-          <span class="rarity-badge badge-${isRare ? 'rara' : 'comune'}">${card.rarity.toUpperCase()}</span>
+          <span class="card-name">${cardName}</span>
+          <span class="rarity-badge badge-${isRare ? 'rara' : 'comune'}">${cardRarity}</span>
         </div>
         <button class="download-icon-btn" title="Scarica Immagine">
           <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
@@ -3408,12 +3505,28 @@
       </div>
     `;
 
+      if (!card.isMock) {
+        const imgEl = el.querySelector('img');
+        if (imgEl) {
+          const onImgError = () => {
+            imgEl.style.display = 'none';
+            if (imgEl.nextElementSibling) imgEl.nextElementSibling.style.display = 'flex';
+          };
+          if (imgEl.complete && imgEl.naturalWidth === 0) {
+            onImgError();
+          } else {
+            imgEl.addEventListener('error', onImgError, { once: true });
+          }
+        }
+      }
+
       const dlBtn = el.querySelector('.download-icon-btn');
       if (dlBtn) {
         dlBtn.onclick = async (e) => {
           e.stopPropagation();
           const fileName = card.filename || `${card.id}.png`;
-          const imgUrl = `${activeApiBaseUrl}/card-image?t=${currentToken}&file=${encodeURIComponent(card.id)}`;
+          const safeToken = encodeURIComponent(currentToken ?? '');
+          const imgUrl = `${activeApiBaseUrl}/card-image?t=${safeToken}&file=${encodeURIComponent(card.id)}`;
           try {
             const resp = await fetch(imgUrl);
             if (!resp.ok) throw new Error('Fetch fallito');
@@ -3615,16 +3728,24 @@
       const isRare = ['rare', 'rara', 'elite', 'legendary', 'leggendaria'].includes((auction.card_rarity || '').toLowerCase());
       el.className = `auction-card ${isRare ? 'rare-auction' : ''}`;
 
-      // Anteprima immagine (solo se image_url è presente)
+      const cardName   = esc(auction.card_name);
+      const rarityLbl  = esc((auction.card_rarity || 'comune').toUpperCase());
+      const seller     = esc(auction.seller_username || 'Venditore');
+      const bidderName = esc(auction.highest_bidder_name);
+      const bidderId   = safeSnowflake(auction.highest_bidder_id);
+      const basePrice  = num(auction.base_price);
+      const topBid     = num(auction.highest_bid);
+
+      // Anteprima immagine: solo path relativi sicuri che iniziano con '/' e non '//'
+      const isSafeRelativePath = typeof auction.image_url === 'string' && auction.image_url.startsWith('/') && !auction.image_url.startsWith('//');
       let previewHtml;
-      if (auction.image_url) {
+      if (isSafeRelativePath) {
         const fullUrl = `${activeApiBaseUrl}${auction.image_url}`;
-        previewHtml = `<img src="${fullUrl}" alt="${auction.card_name}" onerror="this.parentElement.innerHTML=buildAuctionPlaceholder()"`
-          + ` style="width:100%;height:100%;object-fit:cover;">`;
+        previewHtml = `<img src="${esc(fullUrl)}" alt="${cardName}" style="width:100%;height:100%;object-fit:cover;">`;
       } else {
         previewHtml = `
           <div class="auction-card-preview-placeholder">
-            <div class="ph-num">${(auction.card_id || '?').split('-')[0]}</div>
+            <div class="ph-num">${esc(String(auction?.card_id ?? '?').split('-')[0])}</div>
           </div>`;
       }
 
@@ -3645,13 +3766,13 @@
 
       // Box Rilancio / Miglior Offerente con Nome e Discord ID tra parentesi
       let bidInfoHtml = '';
-      if (auction.highest_bid && auction.highest_bidder_name) {
+      if (topBid > 0 && bidderName) {
         bidInfoHtml = `
           <div class="auction-bid-row">
             <div class="auction-bid-label">Miglior offerente</div>
             <div class="auction-bid-val">
-              <span class="bid-amount">${auction.highest_bid} SC</span>
-              <span class="bid-user">da ${auction.highest_bidder_name} <span class="bid-id">(${auction.highest_bidder_id})</span></span>
+              <span class="bid-amount">${topBid} SC</span>
+              <span class="bid-user">da ${bidderName} ${bidderId ? `<span class="bid-id">(${esc(bidderId)})</span>` : ''}</span>
             </div>
           </div>`;
       } else {
@@ -3665,12 +3786,12 @@
       el.innerHTML = `
         <div class="auction-card-preview">${previewHtml}</div>
         <div class="auction-card-info">
-          <div class="auction-card-name">${auction.card_name}</div>
+          <div class="auction-card-name">${cardName}</div>
           <div class="auction-card-meta">
-            <span class="rarity-badge badge-${isRare ? 'rara' : 'comune'}">${(auction.card_rarity || 'comune').toUpperCase()}</span>
+            <span class="rarity-badge badge-${isRare ? 'rara' : 'comune'}">${rarityLbl}</span>
             ${badgeHtml}
           </div>
-          <div class="auction-seller">🪖 ${auction.seller_username || 'Venditore'}</div>
+          <div class="auction-seller">🪖 ${seller}</div>
           <div class="auction-dates">
             <div>Aperta il: ${openingDate}</div>
             ${closingDateHtml}
@@ -3678,14 +3799,27 @@
           <div class="auction-price-row">
             <div>
               <div class="auction-price-label">Prezzo base</div>
-              <div class="auction-price-val">${auction.base_price} SC</div>
+              <div class="auction-price-val">${basePrice} SC</div>
             </div>
             <div class="auction-countdown">--:--:--</div>
           </div>
           ${bidInfoHtml}
         </div>
-        <div class="auction-card-actions" id="actions-${auction.auction_id}"></div>
+        <div class="auction-card-actions"></div>
       `;
+
+      if (isSafeRelativePath) {
+        const previewEl = el.querySelector('.auction-card-preview');
+        const imgEl = previewEl?.querySelector('img');
+        if (imgEl) {
+          const onImgError = () => previewEl.replaceChildren(buildAuctionPlaceholder(auction));
+          if (imgEl.complete && imgEl.naturalWidth === 0) {
+            onImgError();
+          } else {
+            imgEl.addEventListener('error', onImgError, { once: true });
+          }
+        }
+      }
 
       // Avvia countdown per le aste attive
       if (aucStatus === 'active' && auction.expires_at) {
@@ -3714,7 +3848,7 @@
       }
 
       // Azioni disponibili per la carta
-      const actionsEl = el.querySelector(`#actions-${auction.auction_id}`);
+      const actionsEl = el.querySelector('.auction-card-actions');
       if (isMine && myRole === 'seller' && aucStatus === 'active') {
         // Opzioni per il venditore
         const btnSettle = document.createElement('button');
@@ -3794,14 +3928,26 @@
 
         const tokenParam = userSessionToken ? `s=${encodeURIComponent(userSessionToken)}` : '';
         const imgUrl = `${activeApiBaseUrl}/collection-card-image?file=${encodeURIComponent(card.card_id)}&${tokenParam}`;
+        const cardName = esc(card.card_name);
+        const copies = num(card.copies || 1);
 
         cardEl.innerHTML = `
-          ${(card.copies || 1) > 1 ? `<span class="sel-copies">x${card.copies}</span>` : ''}
-          <img src="${imgUrl}" alt="${card.card_name}" onerror="this.style.display='none'">
+          ${copies > 1 ? `<span class="sel-copies">x${copies}</span>` : ''}
+          <img src="${esc(imgUrl)}" alt="${cardName}">
           <div class="sel-card-footer">
-            <div class="sel-card-name">${card.card_name}</div>
+            <div class="sel-card-name">${cardName}</div>
           </div>
         `;
+
+        const imgEl = cardEl.querySelector('img');
+        if (imgEl) {
+          const onImgError = () => { imgEl.style.display = 'none'; };
+          if (imgEl.complete && imgEl.naturalWidth === 0) {
+            onImgError();
+          } else {
+            imgEl.addEventListener('error', onImgError, { once: true });
+          }
+        }
 
         cardEl.onclick = async () => { await openCreateAuctionModal(card, cardEl); };
         grid.appendChild(cardEl);
@@ -3852,13 +3998,26 @@
       const tokenParam = userSessionToken ? `s=${encodeURIComponent(userSessionToken)}` : '';
       const imgUrl = `${activeApiBaseUrl}/collection-card-image?file=${encodeURIComponent(card.card_id)}&${tokenParam}`;
       const isRare = ['rare', 'rara', 'elite', 'legendary', 'leggendaria'].includes((card.rarity || '').toLowerCase());
-      document.getElementById('modal-create-card-preview').innerHTML = `
-        <img src="${imgUrl}" alt="${card.card_name}" style="width:50px;border-radius:5px;" onerror="this.style.display='none'">
+      const cardName = esc(card.card_name);
+      const rarityLbl = esc((card.rarity || 'comune').toUpperCase());
+      const previewEl = document.getElementById('modal-create-card-preview');
+      previewEl.innerHTML = `
+        <img src="${esc(imgUrl)}" alt="${cardName}" style="width:50px;border-radius:5px;">
         <div class="auction-modal-card-info">
-          <strong>${card.card_name}</strong>
-          <span class="rarity-badge badge-${isRare ? 'rara' : 'comune'}" style="align-self:flex-start;">${(card.rarity || 'comune').toUpperCase()}</span>
+          <strong>${cardName}</strong>
+          <span class="rarity-badge badge-${isRare ? 'rara' : 'comune'}" style="align-self:flex-start;">${rarityLbl}</span>
         </div>
       `;
+
+      const imgEl = previewEl.querySelector('img');
+      if (imgEl) {
+        const onImgError = () => { imgEl.style.display = 'none'; };
+        if (imgEl.complete && imgEl.naturalWidth === 0) {
+          onImgError();
+        } else {
+          imgEl.addEventListener('error', onImgError, { once: true });
+        }
+      }
 
       document.getElementById('input-base-price').value = '';
       document.getElementById('modal-create-error').style.display = 'none';
@@ -3933,25 +4092,32 @@
     function openSettleModal(auction) {
       _settleTargetAuction = auction;
       const isRare = ['rare', 'rara', 'elite', 'legendary', 'leggendaria'].includes((auction.card_rarity || '').toLowerCase());
+      const cardName = esc(auction.card_name);
+      const rarityLbl = esc((auction.card_rarity || 'comune').toUpperCase());
+      const basePrice = num(auction.base_price);
+      const bidderName = esc(auction.highest_bidder_name);
+      const bidderId = safeSnowflake(auction.highest_bidder_id);
+      const highestBid = num(auction.highest_bid);
+
       document.getElementById('modal-settle-card-preview').innerHTML = `
         <div class="auction-modal-card-info">
-          <strong>${auction.card_name}</strong>
-          <span class="rarity-badge badge-${isRare ? 'rara' : 'comune'}" style="align-self:flex-start;">${(auction.card_rarity || 'comune').toUpperCase()}</span>
-          <span style="font-size:0.75rem;color:var(--muted);">Prezzo base: ${auction.base_price} SC</span>
+          <strong>${cardName}</strong>
+          <span class="rarity-badge badge-${isRare ? 'rara' : 'comune'}" style="align-self:flex-start;">${rarityLbl}</span>
+          <span style="font-size:0.75rem;color:var(--muted);">Prezzo base: ${basePrice} SC</span>
         </div>
       `;
 
       const winnerInfoEl = document.getElementById('modal-settle-winner-info');
       const buyerInput = document.getElementById('input-buyer-id');
 
-      if (auction.highest_bidder_id && auction.highest_bid) {
+      if (bidderId && highestBid > 0) {
         winnerInfoEl.innerHTML = `
           <div class="settle-winner-box">
-            🏆 <strong>Vincitore Rilanci:</strong> ${auction.highest_bidder_name} <span class="winner-id">(${auction.highest_bidder_id})</span><br>
-            💰 <strong>Offerta finale:</strong> ${auction.highest_bid} SC
+            🏆 <strong>Vincitore Rilanci:</strong> ${bidderName} <span class="winner-id">(${esc(bidderId)})</span><br>
+            💰 <strong>Offerta finale:</strong> ${highestBid} SC
           </div>
         `;
-        buyerInput.value = auction.highest_bidder_id;
+        buyerInput.value = bidderId;
       } else {
         winnerInfoEl.innerHTML = `
           <div style="font-size:0.75rem;color:var(--muted);margin-bottom:10px;font-style:italic;">
@@ -4034,24 +4200,29 @@
       
       const tokenParam = userSessionToken ? `s=${encodeURIComponent(userSessionToken)}` : '';
       const imgUrl = `${activeApiBaseUrl}/collection-card-image?file=${encodeURIComponent(auction.card_id)}&${tokenParam}`;
+      const cardName = esc(auction.card_name);
+      const rarityLbl = esc((auction.card_rarity || 'comune').toUpperCase());
+      const seller = esc(auction.seller_username || 'Venditore');
+      const bidderName = esc(auction.highest_bidder_name);
+      const bidderId = safeSnowflake(auction.highest_bidder_id);
+      const highestBid = num(auction.highest_bid);
+      const basePrice = num(auction.base_price);
 
       document.getElementById('modal-bid-card-preview').innerHTML = `
         <div class="auction-modal-card-info">
-          <strong>${auction.card_name}</strong>
-          <span class="rarity-badge badge-${isRare ? 'rara' : 'comune'}" style="align-self:flex-start;">${(auction.card_rarity || 'comune').toUpperCase()}</span>
-          <span style="font-size:0.75rem;color:var(--muted);">Venditore: 🪖 ${auction.seller_username}</span>
+          <strong>${cardName}</strong>
+          <span class="rarity-badge badge-${isRare ? 'rara' : 'comune'}" style="align-self:flex-start;">${rarityLbl}</span>
+          <span style="font-size:0.75rem;color:var(--muted);">Venditore: 🪖 ${seller}</span>
         </div>
       `;
 
-      const minBid = (auction.highest_bid && auction.highest_bid > 0)
-        ? auction.highest_bid + 1
-        : auction.base_price;
+      const minBid = (highestBid > 0) ? highestBid + 1 : basePrice;
 
       const currentInfoEl = document.getElementById('modal-bid-current-info');
-      if (auction.highest_bid) {
+      if (highestBid > 0) {
         currentInfoEl.innerHTML = `
-          Miglior offerente: <strong>${auction.highest_bidder_name} (${auction.highest_bidder_id})</strong><br>
-          Offerta attuale: <strong style="color:var(--yellow);">${auction.highest_bid} SC</strong> &bull; Rilancio minimo: <strong>${minBid} SC</strong>
+          Miglior offerente: <strong>${bidderName} ${bidderId ? `(${esc(bidderId)})` : ''}</strong><br>
+          Offerta attuale: <strong style="color:var(--yellow);">${highestBid} SC</strong> &bull; Rilancio minimo: <strong>${minBid} SC</strong>
         `;
       } else {
         currentInfoEl.innerHTML = `
