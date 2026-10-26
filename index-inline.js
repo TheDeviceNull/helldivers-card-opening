@@ -379,7 +379,7 @@
           return card.series === targetSeries;
         }
         if (currentCollectionFilter === 'rarity-rara') {
-          return ['rare', 'rara', 'elite', 'legendary', 'leggendaria'].includes(card.rarity.toLowerCase());
+          return ['rare', 'rara', 'elite', 'legendary', 'leggendaria', 'unique', 'unica'].includes(card.rarity.toLowerCase());
         }
         return true;
       });
@@ -397,7 +397,8 @@
     function buildCollectionCardElement(card, isOwned, copies) {
       const el = document.createElement('div');
       const isRare = ['rare', 'elite', 'legendary', 'rara', 'leggendaria'].includes(card.rarity.toLowerCase());
-      el.className = `card ${isRare ? 'rare' : 'common'} ${isOwned ? '' : 'locked'}`;
+      const isUnique = ['unique', 'unica'].includes(card.rarity.toLowerCase());
+      el.className = `card ${isUnique ? 'unique' : (isRare ? 'rare' : 'common')} ${isOwned ? '' : 'locked'}`;
 
       // Usa s=${userSessionToken} o t=${currentToken} per autenticare la risorsa immagine
       const tokenParam = userSessionToken ? `s=${encodeURIComponent(userSessionToken)}` : (currentToken ? `t=${encodeURIComponent(currentToken)}` : '');
@@ -412,12 +413,12 @@
             <div class="card-number">${card.num || '000'}</div>
             ${isOwned ? `<div class="card-codename">${card.name}</div>` : ''}
           </div>
-          ${isRare && isOwned ? '<div class="rare-shimmer"></div>' : ''}
+          ${(isRare || isUnique) && isOwned ? `<div class="rare-shimmer ${isUnique ? 'unique-shimmer' : ''}"></div>` : ''}
         </div>
         <div class="card-footer">
           <div class="card-info-group">
             <span class="card-name">${isOwned ? card.name : '???'}</span>
-            <span class="rarity-badge badge-${isRare ? 'rara' : 'comune'}">${card.rarity.toUpperCase()}</span>
+            <span class="rarity-badge badge-${isUnique ? 'unique' : (isRare ? 'rara' : 'comune')}">${card.rarity.toUpperCase()}</span>
           </div>
         </div>
       `;
@@ -535,7 +536,7 @@
 
       cardsScreen.style.display = 'flex';
 
-      const rarityOrder = { 'core': 0, 'comune': 0, 'rare': 1, 'rara': 1, 'elite': 2, 'legendary': 3, 'leggendaria': 3 };
+      const rarityOrder = { 'core': 0, 'comune': 0, 'rare': 1, 'rara': 1, 'elite': 2, 'legendary': 3, 'leggendaria': 3, 'unique': 4, 'unica': 4 };
       const sorted = [...SELECTED_CARDS].sort((a, b) =>
         (rarityOrder[a.rarity] || 0) - (rarityOrder[b.rarity] || 0)
       );
@@ -546,7 +547,7 @@
 
         setTimeout(() => {
           el.classList.add('reveal');
-          if (card.rarity === 'rara') {
+          if (['rara', 'rare', 'elite', 'legendary', 'leggendaria', 'unique', 'unica'].includes((card.rarity || '').toLowerCase())) {
             setTimeout(() => spawnParticles(), 200);
           }
         }, 100 + i * 120);
@@ -558,7 +559,8 @@
     function buildCard(card) {
       const el = document.createElement('div');
       const isRare = ['rare', 'elite', 'legendary', 'rara', 'leggendaria'].includes(card.rarity);
-      el.className = `card ${isRare ? 'rare' : 'common'}`;
+      const isUnique = ['unique', 'unica'].includes(String(card.rarity || '').toLowerCase());
+      el.className = `card ${isUnique ? 'unique' : (isRare ? 'rare' : 'common')}`;
 
       let cardContent = '';
       if (card.isMock) {
@@ -582,12 +584,12 @@
       el.innerHTML = `
       <div class="card-img-wrapper">
         ${cardContent}
-        ${isRare ? '<div class="rare-shimmer"></div>' : ''}
+        ${(isRare || isUnique) ? `<div class="rare-shimmer ${isUnique ? 'unique-shimmer' : ''}"></div>` : ''}
       </div>
       <div class="card-footer">
         <div class="card-info-group">
           <span class="card-name">${card.name}</span>
-          <span class="rarity-badge badge-${isRare ? 'rara' : 'comune'}">${card.rarity.toUpperCase()}</span>
+          <span class="rarity-badge badge-${isUnique ? 'unique' : (isRare ? 'rara' : 'comune')}">${card.rarity.toUpperCase()}</span>
         </div>
         <button class="download-icon-btn" title="Scarica Immagine">
           <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
@@ -957,7 +959,8 @@
       }
 
       // Filtra: solo carte con almeno 1 copia (il lock sbloccato viene verificato lato server)
-      const available = userOwnedCollection.filter(c => (c.copies || 1) >= 1);
+      // Filtra: solo carte con almeno 1 copia, escludendo carte UNIQUE (non all'asta)
+      const available = userOwnedCollection.filter(c => (c.copies || 1) >= 1 && !['unique', 'unica'].includes(String(c.rarity || '').toLowerCase()));
       grid.innerHTML = '';
 
       if (available.length === 0) {
