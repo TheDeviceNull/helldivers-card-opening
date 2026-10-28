@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="it">
 <head>
   <meta charset="UTF-8">
@@ -236,8 +236,8 @@
     async function init() {
       const token = getSessionToken();
       if (!token) {
-        showState('unauth');
-        renderAuthUI(null);
+        // Nessuna sessione: redirect all'home per il login Discord
+        window.location.replace('index.html');
         return;
       }
 
