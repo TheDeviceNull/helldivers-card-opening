@@ -8,6 +8,7 @@ export const PLACEHOLDER_ICON = new URL('assets/stratagems/_placeholder.svg', lo
 
 // Cache in-memory del baseUrl risolto dinamicamente
 let _cachedApiBaseUrl = localStorage.getItem('hd2_api_base_url') || null;
+export let API_BASE_URL = _cachedApiBaseUrl;
 
 export async function getApiBaseUrl(forceRefresh = false) {
   if (_cachedApiBaseUrl && !forceRefresh) {
@@ -28,6 +29,7 @@ export async function getApiBaseUrl(forceRefresh = false) {
     }
     const resolvedUrl = new URL(match[2]).origin;
     _cachedApiBaseUrl = resolvedUrl;
+    API_BASE_URL = resolvedUrl;
     localStorage.setItem('hd2_api_base_url', resolvedUrl);
     return resolvedUrl;
   } catch (err) {
