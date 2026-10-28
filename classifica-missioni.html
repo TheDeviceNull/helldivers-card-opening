@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Classifica Missioni FAST — SEAF</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./assets/theme.css">
+  <style>
+    .container {
+      max-width: 1000px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+    .leaderboard-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    .leaderboard-table th, .leaderboard-table td {
+      padding: 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid var(--hd-border);
+    }
+    .leaderboard-table th {
+      font-family: var(--hd-font-condensed);
+      text-transform: uppercase;
+      color: var(--hd-accent);
+      background: rgba(0,0,0,0.3);
+    }
+    .leaderboard-table tr:hover {
+      background: var(--hd-surface-bright);
+    }
+    .leaderboard-table tr.my-row {
+      background: rgba(255, 232, 0, 0.1);
+      border-left: 3px solid var(--hd-accent);
+    }
+    .rank-col {
+      font-family: var(--hd-font-condensed);
+      font-weight: 700;
+      font-size: 1.1rem;
+      width: 60px;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="top-nav">
+    <div style="display:flex; align-items:center;">
+      <a href="index.html" style="margin-left:0; font-size:1.2rem; color:var(--hd-accent);">
+        ⚡ SEAF TACTICAL
+      </a>
+      <span style="margin-left:1rem; color:var(--hd-text-muted);">| Classifica Mensile FAST</span>
+    </div>
+    <div>
+      <a href="sala-operativa.html" style="color:var(--hd-accent); text-decoration:none; font-family:var(--hd-font-condensed); font-weight:700;">
+        🎖️ Torna alla Sala Operativa
+      </a>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="hd-card" style="margin-bottom:1.5rem; display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <h2 style="font-family:var(--hd-font-condensed); color:var(--hd-accent); margin:0;">
+          RUOLO D'ONORE SEAF: SALVA IL FAUSTINO
+        </h2>
+        <p style="color:var(--hd-text-muted); margin:0.3rem 0 0 0; font-size:0.9rem;">
+          Punteggio calcolato per sopravvivenza, efficienza tattica ed handicap squadra. Premi mensili assegnati manualmente dal Comando Supremo.
+        </p>
+      </div>
+      <div>
+        <select id="season-select" style="background:var(--hd-surface-bright); color:#fff; border:1px solid var(--hd-border); padding:0.4rem 0.8rem; font-family:var(--hd-font-condensed);">
+        </select>
+      </div>
+    </div>
+
+    <div class="hd-card">
+      <table class="leaderboard-table">
+        <thead>
+          <tr>
+            <th class="rank-col">Pos</th>
+            <th>Ufficiale Tattico</th>
+            <th>Missioni</th>
+            <th>Sopravvissute</th>
+            <th style="text-align:right;">Punteggio Totale</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboard-body">
+          <tr>
+            <td colspan="5" style="text-align:center; color:var(--hd-text-muted); padding:2rem;">
+              Caricamento ruoli d'onore in corso...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <script type="module">
+    import { esc, num, fetchApi, getSessionToken } from './assets/common.js';
+
+    async function loadLeaderboard(season = '') {
+      const tbody = document.getElementById('leaderboard-body');
+      try {
+        const url = season ? `/mission/leaderboard?season=${encodeURIComponent(season)}` : '/mission/leaderboard';
+        const resp = await fetchApi(url);
+        if (resp.ok) {
+          const data = await resp.json();
+          renderTable(data.leaderboard, data.my_rank);
+          populateSeasonDropdown(data.season);
+        } else {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--hd-danger); padding:2rem;">Errore caricamento classifica.</td></tr>';
+        }
+      } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--hd-danger); padding:2rem;">Impossibile comunicare con il server tattico.</td></tr>';
+      }
+    }
+
+    function renderTable(list, myRank) {
+      const tbody = document.getElementById('leaderboard-body');
+      tbody.innerHTML = '';
+      if (!list || list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--hd-text-muted); padding:2rem;">Nessuna operazione registrata per questa stagione.</td></tr>';
+        return;
+      }
+
+      list.forEach(item => {
+        const tr = document.createElement('tr');
+        const isMe = myRank && myRank.user_id === item.user_id;
+        if (isMe) tr.className = 'my-row';
+        tr.innerHTML = `
+          <td class="rank-col">${item.rank}</td>
+          <td><strong>${esc(item.display_name)}</strong> ${isMe ? '<span style="color:var(--hd-accent); font-size:0.8rem;">(TU)</span>' : ''}</td>
+          <td>${item.total_missions}</td>
+          <td>${item.survived_missions}</td>
+          <td style="text-align:right; font-weight:700; color:var(--hd-accent);">${item.total_score}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function populateSeasonDropdown(currentSeason) {
+      const sel = document.getElementById('season-select');
+      if (sel.options.length > 0) return;
+      const opt = document.createElement('option');
+      opt.value = currentSeason;
+      opt.textContent = `Stagione: ${currentSeason}`;
+      sel.appendChild(opt);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadLeaderboard();
+      document.getElementById('season-select').onchange = (e) => loadLeaderboard(e.target.value);
+    });
+  </script>
+</body>
+</html>
+
