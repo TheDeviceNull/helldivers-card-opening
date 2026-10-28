@@ -1,12 +1,15 @@
 ﻿<!DOCTYPE html>
 <html lang="it">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sala Operativa — Missioni FAST SEAF</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="./assets/theme.css">
   <style>
     .container {
@@ -14,14 +17,19 @@
       margin: 2rem auto;
       padding: 0 1rem;
     }
+
     .grid-2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 1.5rem;
     }
+
     @media (max-width: 768px) {
-      .grid-2 { grid-template-columns: 1fr; }
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
     }
+
     .badge {
       display: inline-block;
       padding: 0.2rem 0.5rem;
@@ -31,16 +39,30 @@
       text-transform: uppercase;
       font-family: var(--hd-font-condensed);
     }
-    .badge-media { background: #3b82f6; color: #fff; }
-    .badge-alta { background: var(--hd-danger); color: #fff; }
-    .badge-bassa { background: var(--hd-success); color: #000; }
+
+    .badge-media {
+      background: #3b82f6;
+      color: #fff;
+    }
+
+    .badge-alta {
+      background: var(--hd-danger);
+      color: #fff;
+    }
+
+    .badge-bassa {
+      background: var(--hd-success);
+      color: #000;
+    }
+
     .item-picker {
       max-height: 280px;
       overflow-y: auto;
       border: 1px solid var(--hd-border);
       padding: 0.5rem;
-      background: rgba(0,0,0,0.2);
+      background: rgba(0, 0, 0, 0.2);
     }
+
     .selectable-item {
       display: flex;
       align-items: center;
@@ -52,18 +74,22 @@
       cursor: pointer;
       user-select: none;
     }
+
     .selectable-item:hover {
       border-color: var(--hd-accent);
     }
+
     .selectable-item.selected {
       border-color: var(--hd-accent);
       background: rgba(255, 232, 0, 0.1);
     }
+
     .strat-thumb {
       width: 32px;
       height: 32px;
       margin-right: 0.8rem;
     }
+
     .health-bar-bg {
       width: 100%;
       height: 20px;
@@ -72,6 +98,7 @@
       border-radius: 2px;
       overflow: hidden;
     }
+
     .health-bar-fill {
       height: 100%;
       background: var(--hd-danger);
@@ -79,6 +106,7 @@
     }
   </style>
 </head>
+
 <body>
 
   <!-- Header Navigazione Super Terra coordinato con index.html -->
@@ -106,7 +134,8 @@
       <div id="auth-container">
         <button class="btn-nav-action btn-discord-login" id="btn-login-nav" onclick="triggerLogin()">
           <svg style="width:16px; height:16px; fill:currentColor;" viewBox="0 0 127.14 96.36">
-            <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.71,32.65-1.82,56.6.39,80.21a105.73,105.73,0,0,0,32.27,16.15,77.7,77.7,0,0,0,7.39-12,67.65,67.65,0,0,1-11.9-5.69c.9-.66,1.81-1.34,2.66-2a75.6,75.6,0,0,0,65.71,0c.85.71,1.75,1.39,2.66,2a67.41,67.41,0,0,1-11.9,5.69,77.67,77.67,0,0,0,7.39,12,106.06,106.06,0,0,0,32.27-16.15C130.2,49.88,126.6,26.24,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z" />
+            <path
+              d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.71,32.65-1.82,56.6.39,80.21a105.73,105.73,0,0,0,32.27,16.15,77.7,77.7,0,0,0,7.39-12,67.65,67.65,0,0,1-11.9-5.69c.9-.66,1.81-1.34,2.66-2a75.6,75.6,0,0,0,65.71,0c.85.71,1.75,1.39,2.66,2a67.41,67.41,0,0,1-11.9,5.69,77.67,77.67,0,0,0,7.39,12,106.06,106.06,0,0,0,32.27-16.15C130.2,49.88,126.6,26.24,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z" />
           </svg>
           Login Discord
         </button>
@@ -122,7 +151,8 @@
         Autorizzazione Richiesta
       </h2>
       <p style="color:var(--hd-text-muted); max-width:500px; margin:1rem auto 2rem;">
-        Per accedere alla pianificazione strategica FAST e mobilitare la tua squadra, autenticati con il tuo account Discord autorizzato da Super Terra.
+        Per accedere alla pianificazione strategica FAST e mobilitare la tua squadra, autenticati con il tuo account
+        Discord autorizzato da Super Terra.
       </p>
       <button class="hd-btn" onclick="triggerLogin()">Accedi con Discord</button>
     </div>
@@ -134,7 +164,8 @@
           DISPACCIO OPERATIVO: PIANIFICAZIONE MISSIONE
         </h2>
         <p style="color:var(--hd-text-muted);">
-          Schiera da 2 a 4 carte EDST della tua collezione e alloca un loadout di 4 stratagemmi per soldato. Le carte rimarranno sotto vincolo tattico fino alla conclusione dell'incarico.
+          Schiera da 2 a 4 carte EDST della tua collezione e alloca un loadout di 4 stratagemmi per soldato. Le carte
+          rimarranno sotto vincolo tattico fino alla conclusione dell'incarico.
         </p>
       </div>
 
@@ -145,10 +176,12 @@
             1. SQUADRA EDST (<span id="squad-count">0</span>/4)
           </h3>
           <p style="font-size:0.85rem; color:var(--hd-text-muted);">
-            Potenza Squadra: <strong id="preview-power" style="color:#fff;">0</strong> | Budget Stimato: <strong id="preview-budget" style="color:var(--hd-accent);">0</strong>
+            Potenza Squadra: <strong id="preview-power" style="color:#fff;">0</strong> | Budget Stimato: <strong
+              id="preview-budget" style="color:var(--hd-accent);">0</strong>
           </p>
           <div id="cards-picker" class="item-picker">
-            <div style="color:var(--hd-text-muted); font-size:0.85rem; text-align:center; padding:1rem;">Caricamento carte disponibili...</div>
+            <div style="color:var(--hd-text-muted); font-size:0.85rem; text-align:center; padding:1rem;">Caricamento
+              carte disponibili...</div>
           </div>
         </div>
 
@@ -161,22 +194,46 @@
             Uso singolo per missione. Friendly Kill (FK) e consumo calcolati all'impiego.
           </p>
           <div id="stratagems-picker" class="item-picker">
-            <div style="color:var(--hd-text-muted); font-size:0.85rem; text-align:center; padding:1rem;">Caricamento arsenale...</div>
+            <div style="color:var(--hd-text-muted); font-size:0.85rem; text-align:center; padding:1rem;">Caricamento
+              arsenale...</div>
           </div>
         </div>
       </div>
 
-      <div class="hd-card" style="margin-top:1.5rem; display:flex; justify-content:space-between; align-items:center;">
-        <div>
-          <label style="font-family:var(--hd-font-condensed); text-transform:uppercase; font-weight:700; margin-right:1rem;">
-            Durata Operazione:
-          </label>
-          <select id="select-duration" style="background:var(--hd-surface-bright); color:#fff; border:1px solid var(--hd-border); padding:0.4rem 0.8rem;">
-            <option value="48">48 Ore (3 Eventi — Premio: 3 Carte)</option>
-            <option value="72">72 Ore (4 Eventi — Premio: 5 Carte)</option>
-          </select>
+      <div class="hd-card" style="margin-top:1.5rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+          <div>
+            <label
+              style="font-family:var(--hd-font-condensed); text-transform:uppercase; font-weight:700; margin-right:1rem;">
+              Difficoltà:
+            </label>
+            <select id="select-difficulty"
+              style="background:var(--hd-surface-bright); color:#fff; border:1px solid var(--hd-border); padding:0.4rem 0.8rem; margin-right:1.5rem;">
+              <option value="easy">Facile (D6)</option>
+              <option value="hard">Difficile (D8)</option>
+            </select>
+            <label
+              style="font-family:var(--hd-font-condensed); text-transform:uppercase; font-weight:700; margin-right:1rem;">
+              Durata Operazione:
+            </label>
+            <select id="select-duration"
+              style="background:var(--hd-surface-bright); color:#fff; border:1px solid var(--hd-border); padding:0.4rem 0.8rem;">
+              <option value="48">48 Ore (3 Eventi — Premio: 3 Carte)</option>
+              <option value="72">72 Ore (4 Eventi — Premio: 5 Carte)</option>
+            </select>
+          </div>
+          <button class="hd-btn hd-btn-secondary" id="btn-get-offer">🌍 Scegli Pianeta</button>
         </div>
-        <button class="hd-btn" id="btn-start-mission" disabled>Conferma e Inizia Missione</button>
+        <div id="offer-panel"
+          style="display:none; margin-bottom:1rem; padding:0.8rem; background:rgba(255,232,0,0.05); border:1px solid var(--hd-border);">
+          <span class="badge badge-media" id="op-planet">Pianeta: —</span>
+          <span class="badge badge-media" style="margin-left:0.5rem;" id="op-sector">Settore: —</span>
+          <span class="badge badge-alta" style="margin-left:0.5rem;" id="op-faction">Fazione: —</span>
+          <span style="font-size:0.8rem; color:var(--hd-text-muted); margin-left:1rem;" id="op-biome"></span>
+        </div>
+        <div style="display:flex; justify-content:flex-end;">
+          <button class="hd-btn" id="btn-start-mission" disabled>Conferma e Inizia Missione</button>
+        </div>
       </div>
     </div>
 
@@ -188,7 +245,8 @@
             <h2 style="font-family:var(--hd-font-condensed); color:var(--hd-accent); margin:0;">
               OPERAZIONE IN CORSO: SALVA IL FAUSTINO
             </h2>
-            <span class="badge badge-media" style="margin-top:0.4rem;">Pianeta: Heeth | Settore Orion</span>
+            <span class="badge badge-media" id="active-planet-badge" style="margin-top:0.4rem;">Pianeta: — | Settore
+              —</span>
           </div>
           <button class="hd-btn hd-btn-secondary" id="btn-abort-mission">Ritirata Tattica (Abort)</button>
         </div>
@@ -424,7 +482,7 @@
       document.getElementById('preview-budget').textContent = b;
 
       const btn = document.getElementById('btn-start-mission');
-      btn.disabled = !(nCards >= 2 && nCards <= 4 && selectedStratagems.size === maxSlots);
+      btn.disabled = !(nCards >= 2 && nCards <= 4 && selectedStratagems.size === maxSlots && currentOfferId);
     }
 
     function renderActiveMission() {
@@ -432,13 +490,46 @@
       document.getElementById('mission-hp-val').textContent = Math.round(activeMission.hp);
       document.getElementById('mission-budget-val').textContent = activeMission.budget_left;
       document.getElementById('mission-hp-bar').style.width = `${Math.max(0, activeMission.hp)}%`;
+      // Mostra pianeta dal context dell'offerta
+      try {
+        const ctx = JSON.parse(activeMission.context || '{}');
+        const planet = ctx.planet || '—';
+        const sector = ctx.sector || '—';
+        const faction = ctx.faction_display || ctx.faction || '—';
+        document.getElementById('active-planet-badge').textContent = `${planet} | ${sector} | ${faction}`;
+      } catch (_) { }
     }
 
     document.getElementById('select-duration').onchange = updateCalculations;
 
+    let currentOfferId = null;
+
+    document.getElementById('btn-get-offer').onclick = async () => {
+      const difficulty = document.getElementById('select-difficulty').value;
+      try {
+        const resp = await fetchApi(`/mission/offer?difficulty=${difficulty}`);
+        const res = await resp.json();
+        if (!res.ok) {
+          alert('Errore selezione pianeta: ' + (res.error || 'sconosciuto'));
+          return;
+        }
+        currentOfferId = res.offer_id;
+        document.getElementById('op-planet').textContent = 'Pianeta: ' + (res.planet || '—');
+        document.getElementById('op-sector').textContent = 'Settore: ' + (res.sector || '—');
+        document.getElementById('op-faction').textContent = 'Fazione: ' + (res.faction_display || res.faction || '—');
+        document.getElementById('op-biome').textContent = res.biome || '';
+        document.getElementById('offer-panel').style.display = '';
+        updateCalculations(); // rivaluta il btn-start in base a squadra/loadout
+      } catch (e) {
+        alert('Errore di rete nella selezione pianeta.');
+      }
+    };
+
     document.getElementById('btn-start-mission').onclick = async () => {
+      if (!currentOfferId) { alert('Prima scegli un pianeta con "Scegli Pianeta".'); return; }
       const dur = parseInt(document.getElementById('select-duration').value);
       const payload = {
+        offer_id: currentOfferId,
         duration_h: dur,
         card_ids: Array.from(selectedCards),
         loadout: Array.from(selectedStratagems),
@@ -450,9 +541,14 @@
         });
         const res = await resp.json();
         if (res.ok) {
+          currentOfferId = null;
           await refreshMissionState();
+        } else if (res.error === 'offer_expired') {
+          currentOfferId = null;
+          document.getElementById('offer-panel').style.display = 'none';
+          alert('Offerta scaduta (15 min). Riseleziona il pianeta.');
         } else {
-          alert("Impossibile avviare la missione: " + (res.error || "errore"));
+          alert('Impossibile avviare la missione: ' + (res.error || 'errore'));
         }
       } catch (e) {
         alert("Errore di rete nell'avvio della missione.");
@@ -478,4 +574,5 @@
     window.addEventListener('DOMContentLoaded', init);
   </script>
 </body>
+
 </html>
