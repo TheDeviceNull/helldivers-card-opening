@@ -1,0 +1,26 @@
+{
+  "catalog_version": "79325133890e",
+  "files": {
+    "attacco_aereo_con_gas_eagle.png": "079c789269d2a4c0",
+    "attacco_aereo_con_napalm_eagle.png": "e5e8c2cdd3bbb217",
+    "attacco_aereo_eagle.png": "a11619600ac8f3de",
+    "attacco_fumogeno_eagle.png": "1f40b063bdc25dc6",
+    "attacco_orbitale_con_esplosione_aerea.png": "6c2fa99206913a34",
+    "attacco_orbitale_con_gas.png": "079c789269d2a4c0",
+    "attacco_orbitale_di_precisione.png": "c532c976d09e1f1c",
+    "attacco_orbitale_elettromagnetico.png": "8e56cb991645cc98",
+    "barriera_fumogena_orbitale.png": "102af98f2631dbfd",
+    "bomba_a_grappolo_eagle.png": "775676ae1b7e5ca0",
+    "bomba_eagle_da_500_kg.png": "41ea0981387324f1",
+    "cannone_a_rotaia_orbitale.png": "379423e0805f2d7a",
+    "laser_orbitale.png": "1a194201c43597df",
+    "missili_eagle_da_110_mm.png": "396423d6853e7791",
+    "mitragliamento_a_tappeto_eagle.png": "a2446f22282384f8",
+    "pistola_stim.png": "00ca8ed27ad6e750",
+    "sbarramento_orbitale_al_napalm.png": "55b3ef1b9de0d63b",
+    "sbarramento_orbitale_esplosivo_da_120_mm.png": "3b7f0b8c0588841f",
+    "sbarramento_orbitale_esplosivo_da_380_mm.png": "6082f850f4aea51a",
+    "sbarramento_orbitale_gatling.png": "f868d20eecc3412b",
+    "sbarramento_orbitale_mobile.png": "32bac60828ae9500"
+  }
+}

@@ -1,0 +1,88 @@
+/* Stile tattico Super Terra condiviso per le sezioni web */
+:root {
+  --hd-bg: #0b0e14;
+  --hd-surface: #141a24;
+  --hd-surface-bright: #1c2432;
+  --hd-border: #2a3649;
+  --hd-accent: #ffe800;
+  --hd-accent-hover: #fff04d;
+  --hd-danger: #ff3344;
+  --hd-success: #00e676;
+  --hd-text: #e6edf3;
+  --hd-text-muted: #8b949e;
+  --hd-font: 'Barlow', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --hd-font-condensed: 'Barlow Condensed', sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--hd-bg);
+  color: var(--hd-text);
+  font-family: var(--hd-font);
+  background-image: 
+    linear-gradient(rgba(255, 232, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 232, 0, 0.03) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.top-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: var(--hd-surface);
+  border-bottom: 2px solid var(--hd-accent);
+}
+
+.top-nav a {
+  color: var(--hd-text);
+  text-decoration: none;
+  font-family: var(--hd-font-condensed);
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-left: 1.5rem;
+  transition: color 0.2s ease;
+}
+
+.top-nav a:hover, .top-nav a.active {
+  color: var(--hd-accent);
+}
+
+.hd-card {
+  background: var(--hd-surface);
+  border: 1px solid var(--hd-border);
+  border-radius: 4px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.hd-btn {
+  background: var(--hd-accent);
+  color: #000;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  font-family: var(--hd-font-condensed);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: background 0.15s ease;
+}
+
+.hd-btn:hover {
+  background: var(--hd-accent-hover);
+}
+
+.hd-btn-secondary {
+  background: transparent;
+  color: var(--hd-accent);
+  border: 1px solid var(--hd-accent);
+}
+
+.hd-btn-secondary:hover {
+  background: rgba(255, 232, 0, 0.1);
+}
+
