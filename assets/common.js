@@ -1,5 +1,5 @@
 // Modulo helper condiviso per il sito statico Helldivers 2
-import { API_BASE_URL, DISCORD_CLIENT_ID, DISCORD_REDIRECT_URI, STRATAGEM_ICON_BASE, PLACEHOLDER_ICON } from './config.js';
+import { getApiBaseUrl, DISCORD_CLIENT_ID, DISCORD_REDIRECT_URI, STRATAGEM_ICON_BASE, PLACEHOLDER_ICON } from './config.js';
 
 export function esc(str) {
   if (str === null || str === undefined) return '';
@@ -43,13 +43,33 @@ export async function fetchApi(path, options = {}) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const url = path.startsWith('http') ? path : `${API_BASE_URL}${path}`;
-  const resp = await fetch(url, { ...options, headers });
-  
-  if (resp.status === 401) {
-    setSessionToken(null);
+  let baseUrl = await getApiBaseUrl();
+  const url = path.startsWith('http') ? path : `${baseUrl}${path}`;
+
+  try {
+    const resp = await fetch(url, { ...options, headers });
+    if (resp.status === 401) {
+      setSessionToken(null);
+    }
+    return resp;
+  } catch (error) {
+    // Se fallisce per tunnel ruotato / TypeError, ricarica index.html per recuperare il nuovo endpoint
+    if (error instanceof TypeError && !path.startsWith('http')) {
+      console.warn('[API] Errore di connessione. Tentativo di re-fetch del tunnel Cloudflare da index.html...');
+      try {
+        baseUrl = await getApiBaseUrl(true);
+        const retryUrl = `${baseUrl}${path}`;
+        const retryResp = await fetch(retryUrl, { ...options, headers });
+        if (retryResp.status === 401) {
+          setSessionToken(null);
+        }
+        return retryResp;
+      } catch (retryError) {
+        throw retryError;
+      }
+    }
+    throw error;
   }
-  return resp;
 }
 
 export function loginWithDiscord(postLoginTarget = '') {
@@ -77,4 +97,3 @@ export function attachIconFallback(imgEl) {
     imgEl.src = PLACEHOLDER_ICON;
   }, { once: true });
 }
-

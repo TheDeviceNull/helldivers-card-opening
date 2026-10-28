@@ -2570,6 +2570,7 @@
 
         console.warn('[API] Endpoint Cloudflare aggiornato; riprovo la richiesta.');
         activeApiBaseUrl = refreshedApiBaseUrl.origin;
+        localStorage.setItem('hd2_api_base_url', activeApiBaseUrl);
         return fetch(`${activeApiBaseUrl}${path}`, options);
       }
     }
