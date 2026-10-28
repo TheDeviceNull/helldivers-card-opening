@@ -2004,6 +2004,9 @@
       <button class="btn-nav-action" id="btn-show-fusion" onclick="switchView('fusion')">
         <span class="btn-emoji">♻️</span> Fusione
       </button>
+      <a href="sala-operativa.html" class="btn-nav-action" style="text-decoration:none; display:inline-flex; align-items:center;">
+        <span class="btn-emoji">???</span> Sala Operativa
+      </a>
       <div id="auth-container">
         <button class="btn-nav-action btn-discord-login" onclick="loginWithDiscord()">
           <svg style="width:16px; height:16px; fill:currentColor;" viewBox="0 0 127.14 96.36">
@@ -2781,6 +2784,15 @@
         }
       } else if (userSessionToken) {
         await fetchUserProfileAndCollection();
+          const postLogin = localStorage.getItem('hd2_post_login');
+          if (postLogin) {
+            localStorage.removeItem('hd2_post_login');
+            const whitelist = ['sala-operativa.html', 'classifica-missioni.html'];
+            if (whitelist.includes(postLogin)) {
+              window.location.replace(postLogin);
+              return;
+            }
+          }
       }
 
       updateAuthUI();
@@ -2894,6 +2906,15 @@
           localStorage.setItem('hd2_session_token', userSessionToken);
           currentUserProfile = data.user;
           await fetchUserProfileAndCollection();
+          const postLogin = localStorage.getItem('hd2_post_login');
+          if (postLogin) {
+            localStorage.removeItem('hd2_post_login');
+            const whitelist = ['sala-operativa.html', 'classifica-missioni.html'];
+            if (whitelist.includes(postLogin)) {
+              window.location.replace(postLogin);
+              return;
+            }
+          }
         } else {
           console.error("Autenticazione fallita:", data);
         }
@@ -2978,6 +2999,15 @@
       }
       if (userSessionToken) {
         await fetchUserProfileAndCollection();
+          const postLogin = localStorage.getItem('hd2_post_login');
+          if (postLogin) {
+            localStorage.removeItem('hd2_post_login');
+            const whitelist = ['sala-operativa.html', 'classifica-missioni.html'];
+            if (whitelist.includes(postLogin)) {
+              window.location.replace(postLogin);
+              return;
+            }
+          }
       } else {
         renderCollectionGrid();
       }
@@ -3233,6 +3263,15 @@
         }
 
         await fetchUserProfileAndCollection();
+          const postLogin = localStorage.getItem('hd2_post_login');
+          if (postLogin) {
+            localStorage.removeItem('hd2_post_login');
+            const whitelist = ['sala-operativa.html', 'classifica-missioni.html'];
+            if (whitelist.includes(postLogin)) {
+              window.location.replace(postLogin);
+              return;
+            }
+          }
         resetFusionPreview();
 
         const succeeded = data.succeeded_count ?? (data.outputs?.length ?? 0);
@@ -3956,6 +3995,15 @@
       // Assicura che la collezione sia caricata
       if (userOwnedCollection.length === 0) {
         await fetchUserProfileAndCollection();
+          const postLogin = localStorage.getItem('hd2_post_login');
+          if (postLogin) {
+            localStorage.removeItem('hd2_post_login');
+            const whitelist = ['sala-operativa.html', 'classifica-missioni.html'];
+            if (whitelist.includes(postLogin)) {
+              window.location.replace(postLogin);
+              return;
+            }
+          }
       }
 
       // Filtra: solo carte con almeno 1 copia (il lock sbloccato viene verificato lato server)
@@ -4113,6 +4161,15 @@
           switchAuctionTab('mine', document.getElementById('tab-btn-mine'));
           // Aggiorna la collezione (la carta potrebbe essere bloccata)
           await fetchUserProfileAndCollection();
+          const postLogin = localStorage.getItem('hd2_post_login');
+          if (postLogin) {
+            localStorage.removeItem('hd2_post_login');
+            const whitelist = ['sala-operativa.html', 'classifica-missioni.html'];
+            if (whitelist.includes(postLogin)) {
+              window.location.replace(postLogin);
+              return;
+            }
+          }
         } else {
           const errorMessages = {
             auction_cap_reached: 'Hai già 3 aste attive. Chiudine una prima di crearne un\'altra.',
@@ -4214,6 +4271,15 @@
           closeAuctionModal('modal-settle-auction');
           loadMyAuctions();
           await fetchUserProfileAndCollection();
+          const postLogin = localStorage.getItem('hd2_post_login');
+          if (postLogin) {
+            localStorage.removeItem('hd2_post_login');
+            const whitelist = ['sala-operativa.html', 'classifica-missioni.html'];
+            if (whitelist.includes(postLogin)) {
+              window.location.replace(postLogin);
+              return;
+            }
+          }
         } else {
           const errorMessages = {
             auction_not_found: 'Asta non trovata.',
@@ -4360,6 +4426,15 @@
         if (resp.ok && data.success) {
           loadMyAuctions();
           await fetchUserProfileAndCollection();
+          const postLogin = localStorage.getItem('hd2_post_login');
+          if (postLogin) {
+            localStorage.removeItem('hd2_post_login');
+            const whitelist = ['sala-operativa.html', 'classifica-missioni.html'];
+            if (whitelist.includes(postLogin)) {
+              window.location.replace(postLogin);
+              return;
+            }
+          }
         } else {
           alert(`Errore nell'annullamento: ${data.error || 'sconosciuto'}`);
         }

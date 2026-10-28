@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sala Operativa — Missioni FAST SEAF</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./assets/theme.css">
+  <style>
+    .container {
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    @media (max-width: 768px) {
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.5rem;
+      border-radius: 2px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-family: var(--hd-font-condensed);
+    }
+    .badge-media { background: #3b82f6; color: #fff; }
+    .badge-alta { background: var(--hd-danger); color: #fff; }
+    .badge-bassa { background: var(--hd-success); color: #000; }
+    .item-picker {
+      max-height: 280px;
+      overflow-y: auto;
+      border: 1px solid var(--hd-border);
+      padding: 0.5rem;
+      background: rgba(0,0,0,0.2);
+    }
+    .selectable-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem;
+      margin-bottom: 0.3rem;
+      background: var(--hd-surface-bright);
+      border: 1px solid transparent;
+      cursor: pointer;
+      user-select: none;
+    }
+    .selectable-item:hover {
+      border-color: var(--hd-accent);
+    }
+    .selectable-item.selected {
+      border-color: var(--hd-accent);
+      background: rgba(255, 232, 0, 0.1);
+    }
+    .strat-thumb {
+      width: 32px;
+      height: 32px;
+      margin-right: 0.8rem;
+    }
+    .health-bar-bg {
+      width: 100%;
+      height: 20px;
+      background: #2a1010;
+      border: 1px solid var(--hd-danger);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .health-bar-fill {
+      height: 100%;
+      background: var(--hd-danger);
+      transition: width 0.3s ease;
+    }
+    .timeline-step {
+      padding: 0.8rem;
+      border-left: 2px solid var(--hd-accent);
+      margin-bottom: 0.8rem;
+      background: rgba(255,232,0,0.02);
+    }
+  </style>
+</head>
+<body>
+
+  <header class="top-nav">
+    <div style="display:flex; align-items:center;">
+      <a href="index.html" style="margin-left:0; font-size:1.2rem; color:var(--hd-accent);">
+        ⚡ SEAF TACTICAL
+      </a>
+      <span style="margin-left:1rem; color:var(--hd-text-muted);">| Sala Operativa FAST</span>
+    </div>
+    <div id="auth-box">
+      <button class="hd-btn" id="btn-login" style="display:none;">Login Discord</button>
+      <span id="user-display" style="display:none; font-weight:700; color:var(--hd-accent);"></span>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- STATO 1: NON LOGGATO -->
+    <div id="state-unauth" class="hd-card" style="display:none; text-align:center; padding:3rem 1rem;">
+      <h2 style="font-family:var(--hd-font-condensed); color:var(--hd-accent); text-transform:uppercase;">
+        Autorizzazione Richiesta
+      </h2>
+      <p style="color:var(--hd-text-muted); max-width:500px; margin:1rem auto 2rem;">
+        Per accedere alla pianificazione strategica FAST e mobilitare la tua squadra, autenticati con il tuo account Discord autorizzato da Super Terra.
+      </p>
+      <button class="hd-btn" id="btn-login-hero">Accedi con Discord</button>
+    </div>
+
+    <!-- STATO 2: NESSUNA MISSIONE ATTIVA (CREAZIONE) -->
+    <div id="state-create" style="display:none;">
+      <div class="hd-card" style="margin-bottom:1.5rem;">
+        <h2 style="font-family:var(--hd-font-condensed); color:var(--hd-accent); margin-top:0;">
+          DISPACCIO OPERATIVO: PIANIFICAZIONE MISSIONE
+        </h2>
+        <p style="color:var(--hd-text-muted);">
+          Schiera da 2 a 4 carte EDST della tua collezione e alloca un loadout di 4 stratagemmi per soldato. Le carte rimarranno sotto vincolo tattico fino alla conclusione dell'incarico.
+        </p>
+      </div>
+
+      <div class="grid-2">
+        <!-- Selezione Squadra -->
+        <div class="hd-card">
+          <h3 style="font-family:var(--hd-font-condensed); color:var(--hd-accent); margin-top:0;">
+            1. SQUADRA EDST (<span id="squad-count">0</span>/4)
+          </h3>
+          <p style="font-size:0.85rem; color:var(--hd-text-muted);">
+            Potenza Squadra: <strong id="preview-power" style="color:#fff;">0</strong> | Budget Stimato: <strong id="preview-budget" style="color:var(--hd-accent);">0</strong>
+          </p>
+          <div id="cards-picker" class="item-picker">
+            <div style="color:var(--hd-text-muted); font-size:0.85rem; text-align:center; padding:1rem;">Caricamento carte disponibili...</div>
+          </div>
+        </div>
+
+        <!-- Selezione Loadout -->
+        <div class="hd-card">
+          <h3 style="font-family:var(--hd-font-condensed); color:var(--hd-accent); margin-top:0;">
+            2. LOADOUT STRATAGEMMI (<span id="loadout-count">0</span>/<span id="loadout-max">0</span>)
+          </h3>
+          <p style="font-size:0.85rem; color:var(--hd-text-muted);">
+            Uso singolo per missione. Friendly Kill (FK) e consumo calcolati all'impiego.
+          </p>
+          <div id="stratagems-picker" class="item-picker">
+            <div style="color:var(--hd-text-muted); font-size:0.85rem; text-align:center; padding:1rem;">Caricamento arsenale...</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hd-card" style="margin-top:1.5rem; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <label style="font-family:var(--hd-font-condensed); text-transform:uppercase; font-weight:700; margin-right:1rem;">
+            Durata Operazione:
+          </label>
+          <select id="select-duration" style="background:var(--hd-surface-bright); color:#fff; border:1px solid var(--hd-border); padding:0.4rem 0.8rem;">
+            <option value="48">48 Ore (3 Eventi — Premio: 3 Carte)</option>
+            <option value="72">72 Ore (4 Eventi — Premio: 5 Carte)</option>
+          </select>
+        </div>
+        <button class="hd-btn" id="btn-start-mission" disabled>Conferma e Inizia Missione</button>
+      </div>
+    </div>
+
+    <!-- STATO 3: MISSIONE ATTIVA -->
+    <div id="state-active" style="display:none;">
+      <div class="hd-card" style="margin-bottom:1.5rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <h2 style="font-family:var(--hd-font-condensed); color:var(--hd-accent); margin:0;">
+              OPERAZIONE IN CORSO: SALVA IL FAUSTINO
+            </h2>
+            <span class="badge badge-media" style="margin-top:0.4rem;">Pianeta: Heeth | Settore Orion</span>
+          </div>
+          <button class="hd-btn hd-btn-secondary" id="btn-abort-mission">Ritirata Tattica (Abort)</button>
+        </div>
+
+        <div style="margin-top:1.5rem;">
+          <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:0.3rem;">
+            <span>Integrità Soldato FAST: <strong id="mission-hp-val">100</strong>/100 HP</span>
+            <span>Budget Disponibile: <strong id="mission-budget-val" style="color:var(--hd-accent);">0</strong></span>
+          </div>
+          <div class="health-bar-bg">
+            <div id="mission-hp-bar" class="health-bar-fill" style="width:100%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Evento Attivo o In Attesa -->
+      <div class="hd-card" id="event-box">
+        <h3 style="font-family:var(--hd-font-condensed); color:var(--hd-accent); margin-top:0;">
+          STATO MINACCIA
+        </h3>
+        <p id="event-desc" style="color:var(--hd-text-muted);">
+          Nessuna minaccia attiva al momento. I ricognitori SEAF monitorano il settore.
+        </p>
+        <div id="event-actions" style="display:none; margin-top:1rem;">
+          <button class="hd-btn hd-btn-secondary" id="btn-pass-event">Rispondi Senza Spendere</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script type="module">
+    import { API_BASE_URL, STRATAGEM_ICON_BASE } from './assets/config.js';
+    import { esc, num, fetchApi, loginWithDiscord, getSessionToken, stratagemIcon, attachIconFallback } from './assets/common.js';
+
+    let config = null;
+    let catalog = [];
+    let eligibleCards = [];
+    let selectedCards = new Set();
+    let selectedStratagems = new Set();
+    let activeMission = null;
+
+    async function init() {
+      setupAuth();
+      const token = getSessionToken();
+      if (!token) {
+        showState('unauth');
+        return;
+      }
+
+      await loadMissionConfig();
+      await refreshMissionState();
+    }
+
+    function setupAuth() {
+      const loginBtn = document.getElementById('btn-login');
+      const loginHero = document.getElementById('btn-login-hero');
+      const action = () => loginWithDiscord('sala-operativa.html');
+      if (loginBtn) loginBtn.onclick = action;
+      if (loginHero) loginHero.onclick = action;
+    }
+
+    function showState(st) {
+      document.getElementById('state-unauth').style.display = st === 'unauth' ? 'block' : 'none';
+      document.getElementById('state-create').style.display = st === 'create' ? 'block' : 'none';
+      document.getElementById('state-active').style.display = st === 'active' ? 'block' : 'none';
+    }
+
+    async function loadMissionConfig() {
+      try {
+        const resp = await fetchApi('/mission/config');
+        if (resp.ok) {
+          const data = await resp.json();
+          config = data.config;
+          catalog = data.catalog;
+        }
+      } catch (e) {
+        console.error("Errore caricamento config:", e);
+      }
+    }
+
+    async function refreshMissionState() {
+      try {
+        const resp = await fetchApi('/mission/state');
+        if (resp.ok) {
+          const data = await resp.json();
+          activeMission = data.mission;
+          if (activeMission && (activeMission.status === 'active' || activeMission.status === 'pending')) {
+            renderActiveMission();
+            showState('active');
+          } else {
+            await loadEligibleCards();
+            renderCreateView();
+            showState('create');
+          }
+        }
+      } catch (e) {
+        console.error("Errore recupero missione:", e);
+      }
+    }
+
+    async function loadEligibleCards() {
+      try {
+        const resp = await fetchApi('/mission/eligible-cards');
+        if (resp.ok) {
+          const data = await resp.json();
+          eligibleCards = data.cards || [];
+        }
+      } catch (e) {
+        console.error("Errore carte:", e);
+      }
+    }
+
+    function renderCreateView() {
+      // 1. Render carte
+      const cardsBox = document.getElementById('cards-picker');
+      cardsBox.innerHTML = '';
+      if (eligibleCards.length === 0) {
+        cardsBox.innerHTML = '<div style="color:var(--hd-text-muted); padding:1rem; text-align:center;">Nessuna carta EDST libera trovata nella collezione.</div>';
+      } else {
+        eligibleCards.forEach(c => {
+          const div = document.createElement('div');
+          div.className = 'selectable-item' + (selectedCards.has(c.card_id) ? ' selected' : '');
+          div.innerHTML = `
+            <div>
+              <strong>${esc(c.card_name)}</strong>
+              <div style="font-size:0.75rem; color:var(--hd-text-muted);">${esc(c.rarity.toUpperCase())} | Copie: ${c.free_copies}</div>
+            </div>
+            <span class="badge badge-media">${c.rarity}</span>
+          `;
+          div.onclick = () => toggleCard(c.card_id);
+          cardsBox.appendChild(div);
+        });
+      }
+
+      // 2. Render stratagemmi
+      const stratsBox = document.getElementById('stratagems-picker');
+      stratsBox.innerHTML = '';
+      catalog.forEach(s => {
+        const div = document.createElement('div');
+        div.className = 'selectable-item' + (selectedStratagems.has(s.id) ? ' selected' : '');
+        div.innerHTML = `
+          <div style="display:flex; align-items:center;">
+            <img class="strat-thumb" src="${stratagemIcon(s.icon)}" alt="${esc(s.name)}">
+            <div>
+              <strong>${esc(s.name)}</strong>
+              <div style="font-size:0.75rem; color:var(--hd-text-muted);">Costo: ${s.cost} | FK: ${s.fk_pct}%</div>
+            </div>
+          </div>
+          <span style="font-family:var(--hd-font-condensed); font-weight:700; color:var(--hd-accent);">+${s.power}%</span>
+        `;
+        const img = div.querySelector('img');
+        attachIconFallback(img);
+        div.onclick = () => toggleStratagem(s.id);
+        stratsBox.appendChild(div);
+      });
+
+      updateCalculations();
+    }
+
+    function toggleCard(cid) {
+      if (selectedCards.has(cid)) {
+        selectedCards.delete(cid);
+      } else {
+        if (selectedCards.size >= 4) return;
+        selectedCards.add(cid);
+      }
+      renderCreateView();
+    }
+
+    function toggleStratagem(sid) {
+      const maxSlots = selectedCards.size * 4;
+      if (selectedStratagems.has(sid)) {
+        selectedStratagems.delete(sid);
+      } else {
+        if (selectedStratagems.size >= maxSlots) return;
+        selectedStratagems.add(sid);
+      }
+      renderCreateView();
+    }
+
+    function updateCalculations() {
+      const nCards = selectedCards.size;
+      const maxSlots = nCards * 4;
+      document.getElementById('squad-count').textContent = nCards;
+      document.getElementById('loadout-count').textContent = selectedStratagems.size;
+      document.getElementById('loadout-max').textContent = maxSlots;
+
+      let p = 0;
+      selectedCards.forEach(cid => {
+        const c = eligibleCards.find(x => x.card_id === cid);
+        if (c && config) {
+          p += (config.card_power[c.rarity.toLowerCase()] || 2);
+        }
+      });
+      document.getElementById('preview-power').textContent = p;
+
+      const dur = parseInt(document.getElementById('select-duration').value);
+      const eventsTotal = dur === 48 ? 3 : 4;
+      const b = Math.round((8 + 0.5 * p) * eventsTotal / 3);
+      document.getElementById('preview-budget').textContent = b;
+
+      const btn = document.getElementById('btn-start-mission');
+      btn.disabled = !(nCards >= 2 && nCards <= 4 && selectedStratagems.size === maxSlots);
+    }
+
+    function renderActiveMission() {
+      if (!activeMission) return;
+      document.getElementById('mission-hp-val').textContent = Math.round(activeMission.hp);
+      document.getElementById('mission-budget-val').textContent = activeMission.budget_left;
+      document.getElementById('mission-hp-bar').style.width = `${Math.max(0, activeMission.hp)}%`;
+    }
+
+    document.getElementById('select-duration').onchange = updateCalculations;
+
+    document.getElementById('btn-start-mission').onclick = async () => {
+      const dur = parseInt(document.getElementById('select-duration').value);
+      const payload = {
+        duration_h: dur,
+        card_ids: Array.from(selectedCards),
+        loadout: Array.from(selectedStratagems),
+      };
+      try {
+        const resp = await fetchApi('/mission/start', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        const res = await resp.json();
+        if (res.ok) {
+          await refreshMissionState();
+        } else {
+          alert("Impossibile avviare la missione: " + (res.error || "errore"));
+        }
+      } catch (e) {
+        alert("Errore di rete nell'avvio della missione.");
+      }
+    };
+
+    document.getElementById('btn-abort-mission').onclick = async () => {
+      if (!confirm("Confermi la ritirata tattica? Se la grazia iniziale è scaduta, l'operazione conterà come fallimento.")) return;
+      try {
+        const resp = await fetchApi('/mission/abort', {
+          method: 'POST',
+          body: JSON.stringify({ mission_id: activeMission.mission_id })
+        });
+        const res = await resp.json();
+        if (res.ok) {
+          await refreshMissionState();
+        }
+      } catch (e) {
+        alert("Errore durante l'abort della missione.");
+      }
+    };
+
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
+
