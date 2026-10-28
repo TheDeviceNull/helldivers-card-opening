@@ -17,6 +17,7 @@
 body {
   margin: 0;
   padding: 0;
+  padding-top: 60px;
   background-color: var(--hd-bg);
   color: var(--hd-text);
   font-family: var(--hd-font);
@@ -26,28 +27,107 @@ body {
   background-size: 32px 32px;
 }
 
-.top-nav {
+/* ===== HEADER NAVIGAZIONE IDENTICO A INDEX.HTML ===== */
+.top-nav-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: rgba(8, 15, 28, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(245, 196, 0, 0.2);
+  z-index: 900;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 1rem 2rem;
-  background-color: var(--hd-surface);
-  border-bottom: 2px solid var(--hd-accent);
+  justify-content: space-between;
+  padding: 0 1.5rem;
 }
 
-.top-nav a {
-  color: var(--hd-text);
-  text-decoration: none;
-  font-family: var(--hd-font-condensed);
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  color: #f5c400;
+  font-size: 1.1rem;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  font-weight: 700;
-  letter-spacing: 1px;
-  margin-left: 1.5rem;
-  transition: color 0.2s ease;
+  text-decoration: none;
 }
 
-.top-nav a:hover, .top-nav a.active {
-  color: var(--hd-accent);
+.nav-brand img {
+  width: 28px;
+  height: 28px;
+}
+
+.nav-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-nav-action {
+  background: rgba(245, 196, 0, 0.08);
+  border: 1px solid rgba(245, 196, 0, 0.4);
+  color: #f5c400;
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+}
+
+.btn-nav-action:hover, .btn-nav-action.active {
+  background: #f5c400;
+  color: #050b14;
+  box-shadow: 0 0 15px rgba(245, 196, 0, 0.3);
+}
+
+.btn-discord-login {
+  background: #5865F2;
+  border: none;
+  color: white;
+}
+
+.btn-discord-login:hover {
+  background: #4752C4;
+  color: white;
+  box-shadow: 0 0 15px rgba(88, 101, 242, 0.5);
+}
+
+.user-profile-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.user-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid #f5c400;
+}
+
+.user-name {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--hd-text);
+  letter-spacing: 0.05em;
 }
 
 .hd-card {
@@ -85,4 +165,3 @@ body {
 .hd-btn-secondary:hover {
   background: rgba(255, 232, 0, 0.1);
 }
-
