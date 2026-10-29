@@ -543,30 +543,27 @@
 
           // Stratagemmi disponibili (non ancora usati)
           const available = missionLoadout.filter(l => !l.used_event_id);
-          const stratagemItems = available.map(l => {
-            const cat = catalog.find(c => c.id === l.stratagem_id);
-            if (!cat) return '';
-            return `
-              <label class="selectable-item" style="cursor:pointer;">
-                <input type="checkbox" value="${cat.id}"
-                  style="margin-right:0.6rem;"
-                  onchange="toggleEventStratagem('${cat.id}')">
-                <img class="strat-thumb" src="${stratagemIcon(cat.icon)}" alt="${esc(cat.name)}">
-                <div>
-                  <strong>${esc(cat.name)}</strong>
-                  <div style="font-size:0.75rem; color:var(--hd-text-muted);">Costo: ${l.cost}</div>
-                </div>
-              </label>`;
-          }).join('');
+            const stratagemItems = available.map(l => {
+              const cat = catalog.find(c => c.id === l.stratagem_id);
+              if (!cat) return '';
+              return `
+                <label style="display:flex; flex-direction:column; align-items:center; padding:0.6rem; margin-bottom:0.4rem; background:var(--hd-surface-bright); border:1px solid var(--hd-border); cursor:pointer; text-align:center;">
+                  <input type="checkbox" value="${cat.id}"
+                    style="margin-bottom:0.4rem;"
+                    onchange="toggleEventStratagem('${cat.id}')">
+                  <img class="strat-thumb" src="${stratagemIcon(cat.icon)}" alt="${esc(cat.name)}">
+                  <strong style="font-size:0.85rem; margin-top:0.3rem;">${esc(cat.name)}</strong>
+                  <div style="font-size:0.75rem; color:var(--hd-text-muted);">Costo: ${l.cost} | Efficacia: +${cat.power}% | FK: ${cat.fk_pct}%</div>
+                </label>`;
+            }).join('');
 
           actionBlock = `
             <div style="margin-top:1rem; border-top:1px solid var(--hd-border); padding-top:0.8rem;">
               <p style="font-size:0.85rem; color:var(--hd-text-muted); margin-bottom:0.5rem;">
                 Seleziona stratagemmi da impiegare (opzionale):
               </p>
-              <div id="strat-picker-${ev.event_id}" style="max-height:200px; overflow-y:auto;">
-                ${stratagemItems || '<span style="color:var(--hd-text-muted); font-size:0.85rem;">Nessuno stratagemma disponibile.</span>'}
-              </div>
+              <div id="strat-picker-${ev.event_id}" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap:0.5rem; max-height:250px; overflow-y:auto;">
+                ${stratagemItems || '<div style="color:var(--hd-text-muted); text-align:center; padding:1rem;">Nessuno stratagemma disponibile.</div>'}
               <div style="display:flex; gap:0.8rem; margin-top:0.8rem;">
                 <button class="hd-btn" onclick="playEvent('${ev.event_id}', '${ev.mission_id}')">
                   ⚔️ Intervieni
@@ -601,12 +598,12 @@
       }).join('');
     }
 
-    function toggleEventStratagem(sid) {
+    window.function = function(sid) {
       if (selectedEventStratagems.has(sid)) selectedEventStratagems.delete(sid);
       else selectedEventStratagems.add(sid);
     }
 
-    async function playEvent(eventId, missionId) {
+    window.playEvent = async function(eventId, missionId) {
       try {
         const resp = await fetchApi('/mission/play', {
           method: 'POST',
@@ -627,7 +624,7 @@
       } catch(e) { alert('Errore di rete.'); }
     }
 
-    async function passEvent(eventId, missionId) {
+    window.passEvent = async function(eventId, missionId) {
       selectedEventStratagems.clear();
       await playEvent(eventId, missionId);
     }
