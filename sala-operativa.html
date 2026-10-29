@@ -260,6 +260,15 @@
             <div id="mission-hp-bar" class="health-bar-fill" style="width:100%;"></div>
           </div>
         </div>
+              <!-- Storico eventi missione -->
+        <div class="hd-card" style="margin-top:1.5rem;">
+          <h3 style="font-family:var(--hd-font-condensed); color:var(--hd-accent); margin-top:0;">
+          REGISTRO OPERATIVO
+          </h3>
+          <div id="event-log"></div>
+        </div>
+      </div>
+        
       </div>
 
       <!-- Evento Attivo o In Attesa -->
@@ -362,12 +371,15 @@
       }
     }
 
+    let missionEvents = [];
+
     async function refreshMissionState() {
       try {
         const resp = await fetchApi('/mission/state');
         if (resp.ok) {
           const data = await resp.json();
           activeMission = data.mission;
+          missionEvents = data.events || [];
           if (activeMission && (activeMission.status === 'active' || activeMission.status === 'pending')) {
             renderActiveMission();
             showState('active');
@@ -490,14 +502,62 @@
       document.getElementById('mission-hp-val').textContent = Math.round(activeMission.hp);
       document.getElementById('mission-budget-val').textContent = activeMission.budget_left;
       document.getElementById('mission-hp-bar').style.width = `${Math.max(0, activeMission.hp)}%`;
-      // Mostra pianeta dal context dell'offerta
+
       try {
         const ctx = JSON.parse(activeMission.context || '{}');
-        const planet = ctx.planet || '—';
-        const sector = ctx.sector || '—';
-        const faction = ctx.faction_display || ctx.faction || '—';
-        document.getElementById('active-planet-badge').textContent = `${planet} | ${sector} | ${faction}`;
-      } catch (_) { }
+        document.getElementById('active-planet-badge').textContent =
+          `${ctx.planet || '—'} | ${ctx.sector || '—'} | ${ctx.faction_display || ctx.faction || '—'}`;
+      } catch(_) {}
+
+      renderEventLog();
+    }
+
+    function renderEventLog() {
+      const box = document.getElementById('event-log');
+      if (!box) return;
+      if (missionEvents.length === 0) {
+        box.innerHTML = '<p style="color:var(--hd-text-muted); font-size:0.85rem;">Nessun evento registrato.</p>';
+        return;
+      }
+      box.innerHTML = missionEvents.map(ev => {
+        const payload = JSON.parse(ev.payload || '{}');
+        const resolution = ev.resolution ? JSON.parse(ev.resolution) : null;
+        const dueDate = new Date(ev.due_at * 1000).toLocaleString('it-IT');
+        const resolvedDate = ev.resolved_at
+          ? new Date(ev.resolved_at * 1000).toLocaleString('it-IT')
+          : null;
+
+        let statusBadge = '';
+        let outcomeText = '';
+        if (ev.status === 'scheduled') {
+          statusBadge = `<span class="badge badge-media">In Attesa</span>`;
+          outcomeText = `<span style="color:var(--hd-text-muted);">Previsto: ${dueDate}</span>`;
+        } else if (ev.status === 'open') {
+          statusBadge = `<span class="badge badge-alta">⚠️ Attivo</span>`;
+          outcomeText = `<span style="color:var(--hd-accent);">Scade: ${new Date(ev.expires_at * 1000).toLocaleString('it-IT')}</span>`;
+        } else if (ev.status === 'resolved' && resolution) {
+          const won = resolution.won_with_intervention;
+          statusBadge = won
+            ? `<span class="badge badge-bassa">✅ Superato</span>`
+            : `<span class="badge badge-alta">❌ Fallito</span>`;
+          outcomeText = `HP persi: <strong>${resolution.hp_lost?.toFixed(1) ?? '—'}</strong> | Risolto: ${resolvedDate}`;
+        }
+
+        return `
+          <div style="border:1px solid var(--hd-border); padding:0.8rem; margin-bottom:0.6rem; background:rgba(0,0,0,0.2);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+              <strong style="font-family:var(--hd-font-condensed); font-size:1rem;">
+                Evento ${ev.idx + 1}: ${esc(payload.name || '—')}
+              </strong>
+              ${statusBadge}
+            </div>
+            <p style="color:var(--hd-text-muted); font-size:0.85rem; margin:0.3rem 0;">
+              ${esc(ev.narrative || payload.description || '—')}
+            </p>
+            <div style="font-size:0.8rem; color:var(--hd-text-muted);">${outcomeText}</div>
+          </div>
+        `;
+      }).join('');
     }
 
     document.getElementById('select-duration').onchange = updateCalculations;
