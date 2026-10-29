@@ -372,6 +372,7 @@
     }
 
     let missionEvents = [];
+    let missionLoadout = [];
 
     async function refreshMissionState() {
       try {
@@ -380,6 +381,7 @@
           const data = await resp.json();
           activeMission = data.mission;
           missionEvents = data.events || [];
+          missionLoadout = data.loadout || [];
           if (activeMission && (activeMission.status === 'active' || activeMission.status === 'pending')) {
             renderActiveMission();
             showState('active');
@@ -512,6 +514,8 @@
       renderEventLog();
     }
 
+    let selectedEventStratagems = new Set();
+
     function renderEventLog() {
       const box = document.getElementById('event-log');
       if (!box) return;
@@ -520,21 +524,58 @@
         return;
       }
       box.innerHTML = missionEvents.map(ev => {
-        const payload = JSON.parse(ev.payload || '{}');
+        const payload    = JSON.parse(ev.payload || '{}');
         const resolution = ev.resolution ? JSON.parse(ev.resolution) : null;
-        const dueDate = new Date(ev.due_at * 1000).toLocaleString('it-IT');
+        const dueDate    = new Date(ev.due_at * 1000).toLocaleString('it-IT');
         const resolvedDate = ev.resolved_at
-          ? new Date(ev.resolved_at * 1000).toLocaleString('it-IT')
-          : null;
+          ? new Date(ev.resolved_at * 1000).toLocaleString('it-IT') : null;
 
         let statusBadge = '';
         let outcomeText = '';
+        let actionBlock = '';
+
         if (ev.status === 'scheduled') {
           statusBadge = `<span class="badge badge-media">In Attesa</span>`;
           outcomeText = `<span style="color:var(--hd-text-muted);">Previsto: ${dueDate}</span>`;
         } else if (ev.status === 'open') {
           statusBadge = `<span class="badge badge-alta">⚠️ Attivo</span>`;
           outcomeText = `<span style="color:var(--hd-accent);">Scade: ${new Date(ev.expires_at * 1000).toLocaleString('it-IT')}</span>`;
+
+          // Stratagemmi disponibili (non ancora usati)
+          const available = missionLoadout.filter(l => !l.used_event_id);
+          const stratagemItems = available.map(l => {
+            const cat = catalog.find(c => c.id === l.stratagem_id);
+            if (!cat) return '';
+            return `
+              <label class="selectable-item" style="cursor:pointer;">
+                <input type="checkbox" value="${cat.id}"
+                  style="margin-right:0.6rem;"
+                  onchange="toggleEventStratagem('${cat.id}')">
+                <img class="strat-thumb" src="${stratagemIcon(cat.icon)}" alt="${esc(cat.name)}">
+                <div>
+                  <strong>${esc(cat.name)}</strong>
+                  <div style="font-size:0.75rem; color:var(--hd-text-muted);">Costo: ${l.cost}</div>
+                </div>
+              </label>`;
+          }).join('');
+
+          actionBlock = `
+            <div style="margin-top:1rem; border-top:1px solid var(--hd-border); padding-top:0.8rem;">
+              <p style="font-size:0.85rem; color:var(--hd-text-muted); margin-bottom:0.5rem;">
+                Seleziona stratagemmi da impiegare (opzionale):
+              </p>
+              <div id="strat-picker-${ev.event_id}" style="max-height:200px; overflow-y:auto;">
+                ${stratagemItems || '<span style="color:var(--hd-text-muted); font-size:0.85rem;">Nessuno stratagemma disponibile.</span>'}
+              </div>
+              <div style="display:flex; gap:0.8rem; margin-top:0.8rem;">
+                <button class="hd-btn" onclick="playEvent('${ev.event_id}', '${ev.mission_id}')">
+                  ⚔️ Intervieni
+                </button>
+                <button class="hd-btn hd-btn-secondary" onclick="passEvent('${ev.event_id}', '${ev.mission_id}')">
+                  Passa senza spendere
+                </button>
+              </div>
+            </div>`;
         } else if (ev.status === 'resolved' && resolution) {
           const won = resolution.won_with_intervention;
           statusBadge = won
@@ -555,9 +596,40 @@
               ${esc(ev.narrative || payload.description || '—')}
             </p>
             <div style="font-size:0.8rem; color:var(--hd-text-muted);">${outcomeText}</div>
-          </div>
-        `;
+            ${actionBlock}
+          </div>`;
       }).join('');
+    }
+
+    function toggleEventStratagem(sid) {
+      if (selectedEventStratagems.has(sid)) selectedEventStratagems.delete(sid);
+      else selectedEventStratagems.add(sid);
+    }
+
+    async function playEvent(eventId, missionId) {
+      try {
+        const resp = await fetchApi('/mission/play', {
+          method: 'POST',
+          body: JSON.stringify({
+            mission_id: missionId,
+            event_id: eventId,
+            stratagem_ids: Array.from(selectedEventStratagems),
+            request_id: `play_${eventId}_${Date.now()}`,
+          })
+        });
+        const res = await resp.json();
+        if (res.ok) {
+          selectedEventStratagems.clear();
+          await refreshMissionState();
+        } else {
+          alert('Errore: ' + (res.error || 'sconosciuto'));
+        }
+      } catch(e) { alert('Errore di rete.'); }
+    }
+
+    async function passEvent(eventId, missionId) {
+      selectedEventStratagems.clear();
+      await playEvent(eventId, missionId);
     }
 
     document.getElementById('select-duration').onchange = updateCalculations;
