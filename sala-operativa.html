@@ -585,10 +585,15 @@
         return `
           <div style="border:1px solid var(--hd-border); padding:0.8rem; margin-bottom:0.6rem; background:rgba(0,0,0,0.2);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
-              <strong style="font-family:var(--hd-font-condensed); font-size:1rem;">
-                Evento ${ev.idx + 1}: ${esc(payload.name || '—')}
-              </strong>
+            <strong style="font-family:var(--hd-font-condensed); font-size:1rem;">
+              Evento ${ev.idx + 1}: ${esc(payload.name || '—')}
+            </strong>
+            <div style="display:flex; align-items:center; gap:0.8rem;">
+              <span style="font-size:0.75rem; color:var(--hd-text-muted);">
+                Minaccia: <strong style="color:var(--hd-accent);">${Math.round((payload.E_eff || 0))} EP</strong>
+              </span>
               ${statusBadge}
+            </div>
             </div>
             <p style="color:var(--hd-text-muted); font-size:0.85rem; margin:0.3rem 0;">
               ${esc(ev.narrative || payload.description || '—')}
