@@ -104,6 +104,40 @@
       background: var(--hd-danger);
       transition: width 0.3s ease;
     }
+
+    /* Overlay terminale outcome evento */
+    #tactical-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.92);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+    }
+    #tactical-overlay.active { display: flex; }
+    #tactical-terminal {
+      width: min(680px, 95vw);
+      background: #0a0a0a;
+      border: 1px solid #3a5a3a;
+      padding: 1.5rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      color: #7cfc00;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    #tactical-terminal .line { margin: 0.2rem 0; white-space: pre-wrap; }
+    #tactical-terminal .line.warn  { color: #ff6b35; }
+    #tactical-terminal .line.ok    { color: #7cfc00; }
+    #tactical-terminal .line.dim   { color: #556655; }
+    #tactical-terminal .line.title { color: #ffffff; font-weight: bold; letter-spacing: 0.1em; }
+    #tactical-terminal .line.fk    { color: #ff3333; }
+    #btn-close-overlay {
+      display: none;
+      margin-top: 1.2rem;
+      width: 100%;
+    }
   </style>
 </head>
 
@@ -605,10 +639,97 @@
     }
 
     window.toggleEventStratagem = function(sid) {
-      if (selectedEventStratagems.has(sid)) selectedEventStratagems.delete(sid);
+      if (selectedEventStratagems.has(sid)) selectedEventStratagems.delete(sid);  
       else selectedEventStratagems.add(sid);
     }
 
+    // Mostra overlay terminale con animazione sequenziale
+    async function showTacticalOverlay(resolution, eventName) {
+      const term = document.getElementById('tactical-terminal');
+      const overlay = document.getElementById('tactical-overlay');
+      const btn = document.getElementById('btn-close-overlay');
+      term.innerHTML = '';
+      btn.style.display = 'none';
+      overlay.classList.add('active');
+
+      // Stampa una riga con ritardo
+      const print = (text, cls = '', delay = 60) => new Promise(resolve => {
+        setTimeout(() => {
+          const div = document.createElement('div');
+          div.className = 'line' + (cls ? ' ' + cls : '');
+          div.textContent = text;
+          term.appendChild(div);
+          term.scrollTop = term.scrollHeight;
+          resolve();
+        }, delay);
+      });
+
+      const pause = ms => new Promise(r => setTimeout(r, ms));
+
+      let t = 0;
+      const q = (text, cls, extra = 0) => { t += extra; return print(text, cls, t); };
+
+      await q('╔══════════════════════════════════════╗', 'dim');
+      await q('  S.E.A.F. — RAPPORTO TATTICO EVENTO   ', 'title', 80);
+      await q('╚══════════════════════════════════════╝', 'dim', 80);
+      await q('', '', 120);
+      await q(`> OBIETTIVO: ${eventName.toUpperCase()}`, '', 160);
+      await q('> ANALISI STRATAGEMMI IN CORSO...', 'dim', 300);
+      await q('', '', 200);
+
+      // Tiri FK
+      const fkRolls = resolution.fk_rolls || [];
+      if (fkRolls.length > 0) {
+        await q('[ VALUTAZIONE RISCHIO FUOCO AMICO ]', 'dim', 300);
+        for (const roll of fkRolls) {
+          const stratName = catalog.find(c => c.id === roll.stratagem_id)?.name || roll.stratagem_id;
+          const pct = Math.round(roll.threshold * 100);
+          if (roll.triggered) {
+            await q(`  ⚠ ${stratName} — FUOCO AMICO! Danno: ${roll.damage} HP`, 'fk', 400);
+          } else {
+            await q(`  ✓ ${stratName} — rischio ${pct}% — CONTROLLATO`, 'dim', 350);
+          }
+        }
+        await q('', '', 150);
+      }
+
+      // Copertura
+      await q('[ CALCOLO COPERTURA TATTICA ]', 'dim', 300);
+      await q(`  Copertura passiva:    ${(resolution.c_passiva * 100).toFixed(1)}%`, '', 400);
+      await q(`  Potenza stratagemmi:  +${(resolution.strat_power_sum).toFixed(1)} pp`, '', 350);
+      await q(`  Copertura totale:     ${(resolution.c_tot * 100).toFixed(1)}%`, resolution.c_tot >= 1.0 ? 'ok' : 'warn', 400);
+      await q('', '', 200);
+
+      // Danni
+      if (resolution.fk_damage > 0) {
+        await q(`  Danno fuoco amico:    ${resolution.fk_damage.toFixed(1)} HP`, 'fk', 300);
+      }
+      if (resolution.event_damage > 0) {
+        await q(`  Danno evento:         ${resolution.event_damage.toFixed(1)} HP`, 'warn', 300);
+      }
+      await q(`  HP rimanenti:         ${resolution.hp_after.toFixed(1)} / 100`, '', 350);
+      await q('', '', 300);
+
+      // Esito
+      await q('══════════════════════════════════════', 'dim', 200);
+      if (resolution.won_with_intervention) {
+        await q('  ✅ MISSIONE TATTICA COMPLETATA', 'ok', 400);
+        await q('  La Super Terra registra la vostra vittoria.', 'dim', 300);
+      } else if (resolution.c_tot >= 1.0) {
+        await q('  ✅ MINACCIA NEUTRALIZZATA', 'ok', 400);
+        await q('  Eseguito senza intervento diretto.', 'dim', 300);
+      } else {
+        await q('  ❌ COPERTURA INSUFFICIENTE', 'warn', 400);
+        await q('  Il fronte ha ceduto. Perdite registrate.', 'warn', 300);
+      }
+      await q('══════════════════════════════════════', 'dim', 300);
+
+      btn.style.display = 'block';
+    }
+
+    window.closeTacticalOverlay = function() {
+      document.getElementById('tactical-overlay').classList.remove('active');
+    }
     window.playEvent = async function(eventId, missionId) {
       try {
         const resp = await fetchApi('/mission/play', {
@@ -623,6 +744,9 @@
         const res = await resp.json();
         if (res.ok) {
           selectedEventStratagems.clear();
+          const evName = missionEvents.find(e => e.event_id === eventId);
+          const name = evName ? JSON.parse(evName.payload || '{}').name || 'Evento' : 'Evento';
+          await showTacticalOverlay(res.resolution, name);
           await refreshMissionState();
         } else {
           alert('Errore: ' + (res.error || 'sconosciuto'));
@@ -708,6 +832,14 @@
 
     window.addEventListener('DOMContentLoaded', init);
   </script>
+  <div id="tactical-overlay">
+    <div style="display:flex; flex-direction:column; align-items:center;">
+      <div id="tactical-terminal"></div>
+      <button id="btn-close-overlay" class="hd-btn" onclick="closeTacticalOverlay()">
+        ▶ CONTINUA
+      </button>
+    </div>
+  </div>
 </body>
 
 </html>
