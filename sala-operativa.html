@@ -237,25 +237,15 @@
       <div class="hd-card" style="margin-top:1.5rem;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
           <div>
-            <label
-              style="font-family:var(--hd-font-condensed); text-transform:uppercase; font-weight:700; margin-right:1rem;">
-              Difficoltà:
-            </label>
-            <select id="select-difficulty"
-              style="background:var(--hd-surface-bright); color:#fff; border:1px solid var(--hd-border); padding:0.4rem 0.8rem; margin-right:1.5rem;">
-              <option value="easy">Facile (D6)</option>
-              <option value="hard">Difficile (D8)</option>
-            </select>
-            <label
-              style="font-family:var(--hd-font-condensed); text-transform:uppercase; font-weight:700; margin-right:1rem;">
+            <label style="font-family:var(--hd-font-condensed); text-transform:uppercase; font-weight:700; margin-right:1rem;">
               Durata Operazione:
             </label>
-            <select id="select-duration"
-              style="background:var(--hd-surface-bright); color:#fff; border:1px solid var(--hd-border); padding:0.4rem 0.8rem;">
-              <option value="48">48 Ore (3 Eventi — Premio: 3 Carte)</option>
-              <option value="72">72 Ore (4 Eventi — Premio: 5 Carte)</option>
-            </select>
-          </div>
+          <select id="select-duration"
+            style="background:var(--hd-surface-bright); color:#fff; border:1px solid var(--hd-border); padding:0.4rem 0.8rem;">
+            <option value="48">48 Ore — Facile (D6) — 3 Eventi — Premio: 3 Carte</option>
+            <option value="72">72 Ore — Difficile (D8) — 4 Eventi — Premio: 5 Carte</option>
+          </select>
+        </div>
           <button class="hd-btn hd-btn-secondary" id="btn-get-offer">🌍 Scegli Pianeta</button>
         </div>
         <div id="offer-panel"
@@ -764,7 +754,8 @@
     let currentOfferId = null;
 
     document.getElementById('btn-get-offer').onclick = async () => {
-      const difficulty = document.getElementById('select-difficulty').value;
+      const dur = parseInt(document.getElementById('select-duration').value);
+      const difficulty = dur === 48 ? 'easy' : 'hard';
       try {
         const resp = await fetchApi(`/mission/offer?difficulty=${difficulty}`);
         const res = await resp.json();
