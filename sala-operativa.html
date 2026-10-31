@@ -375,7 +375,7 @@
         `;
       } else {
         const avatarUrl = user.avatar
-          ? `https://cdn.discordapp.com/avatars/${user.user_id}/${user.avatar}.png`
+          ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`
           : './assets/superearth.png';
         authCont.innerHTML = `
           <div class="user-profile-badge">
