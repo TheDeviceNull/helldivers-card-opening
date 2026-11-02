@@ -108,6 +108,36 @@
       transition: width 0.3s ease;
     }
 
+    .mission-squad {
+      margin-top: 1.25rem;
+      padding: 0.75rem;
+      border: 1px solid var(--hd-border);
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .mission-squad-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0.5rem;
+      margin: 0.5rem 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .mission-squad-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.5rem;
+      background: var(--hd-surface-bright);
+    }
+
+    .mission-squad-power {
+      flex-shrink: 0;
+      color: var(--hd-accent);
+      font-weight: 700;
+    }
+
     /* Overlay terminale outcome evento */
     #tactical-overlay {
       display: none;
@@ -278,6 +308,14 @@
           <button class="hd-btn hd-btn-secondary" id="btn-abort-mission">Ritirata Tattica (Abort)</button>
         </div>
 
+        <section class="mission-squad" aria-labelledby="mission-squad-title">
+          <h3 id="mission-squad-title"
+            style="font-family:var(--hd-font-condensed); color:var(--hd-accent); margin:0;">
+            SQUADRA IN MISSIONE
+          </h3>
+          <ul id="mission-squad-list" class="mission-squad-list"></ul>
+        </section>
+
         <div style="margin-top:1.5rem;">
           <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:0.3rem;">
             <span>Integrità Soldato FAST: <strong id="mission-hp-val">100</strong>/100 HP</span>
@@ -400,6 +438,7 @@
 
     let missionEvents = [];
     let missionLoadout = [];
+    let missionSquad = [];
 
     async function refreshMissionState() {
       try {
@@ -409,6 +448,7 @@
           activeMission = data.mission;
           missionEvents = data.events || [];
           missionLoadout = data.loadout || [];
+          missionSquad = data.squad || [];
           if (activeMission && (activeMission.status === 'active' || activeMission.status === 'pending')) {
             renderActiveMission();
             showState('active');
@@ -531,6 +571,29 @@
       document.getElementById('mission-hp-val').textContent = Math.round(activeMission.hp);
       document.getElementById('mission-budget-val').textContent = activeMission.budget_left;
       document.getElementById('mission-hp-bar').style.width = `${Math.max(0, activeMission.hp)}%`;
+
+      const squadList = document.getElementById('mission-squad-list');
+      squadList.replaceChildren();
+      if (missionSquad.length === 0) {
+        const emptyItem = document.createElement('li');
+        emptyItem.textContent = 'Nessuna carta squadra disponibile.';
+        squadList.appendChild(emptyItem);
+      } else {
+        for (const card of missionSquad) {
+          const item = document.createElement('li');
+          item.className = 'mission-squad-item';
+
+          const identity = document.createElement('span');
+          identity.textContent = `${card.card_name || card.card_id} · ${card.rarity || '—'}`;
+          item.appendChild(identity);
+
+          const power = document.createElement('span');
+          power.className = 'mission-squad-power';
+          power.textContent = `POT ${num(card.power)}`;
+          item.appendChild(power);
+          squadList.appendChild(item);
+        }
+      }
 
       try {
         const ctx = JSON.parse(activeMission.context || '{}');
