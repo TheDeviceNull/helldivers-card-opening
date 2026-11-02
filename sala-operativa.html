@@ -606,7 +606,36 @@
           statusBadge = won
             ? `<span class="badge badge-bassa">✅ Superato</span>`
             : `<span class="badge badge-alta">❌ Fallito</span>`;
-          outcomeText = `HP persi: <strong>${resolution.hp_lost?.toFixed(1) ?? '—'}</strong> | Risolto: ${resolvedDate}`;
+
+          // Stratagemmi usati in questo evento
+          const usedStrats = missionLoadout.filter(l => l.used_event_id === ev.event_id);
+          const stratIcons = usedStrats.map(l => {
+            const cat = catalog.find(c => c.id === l.stratagem_id);
+            if (!cat) return '';
+            return `<img class="strat-thumb" src="${stratagemIcon(cat.icon)}" alt="${esc(cat.name)}"
+                      title="${esc(cat.name)}" style="width:28px; height:28px; opacity:0.85;">`;
+          }).join('');
+
+          // Cura STIM se presente
+          const healLine = (resolution.heal_amount > 0)
+            ? `<span style="color:#7cfc00;">💉 +${resolution.heal_amount.toFixed(1)} HP</span> | `
+            : '';
+
+          // FK se scattato
+          const fkLine = (resolution.fk_damage > 0)
+            ? `<span style="color:#ff3333;">💀 FK: ${resolution.fk_damage.toFixed(1)} HP</span> | `
+            : '';
+
+          outcomeText = `
+            <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap; margin-top:0.3rem;">
+              ${stratIcons ? `<div style="display:flex; gap:4px; align-items:center;">${stratIcons}</div>` : '<span style="color:var(--hd-text-muted); font-size:0.8rem;">Nessun stratagemma</span>'}
+              <span style="color:var(--hd-text-muted); font-size:0.8rem;">|</span>
+              <span style="font-size:0.8rem;">
+                ${healLine}${fkLine}Copertura: <strong>${(resolution.c_tot * 100).toFixed(1)}%</strong> |
+                HP persi: <strong style="color:${resolution.hp_lost > 0 ? '#ff6b35' : 'inherit'};">${resolution.hp_lost?.toFixed(1) ?? '—'}</strong>
+              </span>
+              <span style="color:var(--hd-text-muted); font-size:0.75rem;">— ${resolvedDate}</span>
+            </div>`;
         }
 
         return `
