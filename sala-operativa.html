@@ -686,6 +686,18 @@
         await q('', '', 150);
       }
 
+      // Cura STIM
+      if (resolution.heal_amount > 0) {
+        await q('[ INTERVENTO MEDICO ]', 'dim', 300);
+        await q(`  💉 Pistola STIM — Cura applicata: +${resolution.heal_amount.toFixed(1)} HP`, 'ok', 400);
+        await q('', '', 150);
+      } else if (resolution.heal_amount === 0 && resolution.hp_before < 100) {
+        // Diagnostico: STIM selezionata ma heal=0 — bug in risoluzione
+        await q('[ INTERVENTO MEDICO ]', 'dim', 300);
+        await q(`  ⚠ STIM — cura non applicata (DEBUG: heal=0, hp_before=${resolution.hp_before?.toFixed(1)})`, 'warn', 400);
+        await q('', '', 150);
+      }
+
       // Copertura
       await q('[ CALCOLO COPERTURA TATTICA ]', 'dim', 300);
       await q(`  Copertura passiva:    ${(resolution.c_passiva * 100).toFixed(1)}%`, '', 400);
