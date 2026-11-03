@@ -334,8 +334,6 @@
         </div>
       </div>
         
-      </div>
-
       <!-- Evento Attivo o In Attesa -->
       <div class="hd-card" id="event-box">
         <h3 style="font-family:var(--hd-font-condensed); color:var(--hd-accent); margin-top:0;">
@@ -346,6 +344,40 @@
         </p>
         <div id="event-actions" style="display:none; margin-top:1rem;">
           <button class="hd-btn hd-btn-secondary" id="btn-pass-event">Rispondi Senza Spendere</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATO 4: DEBRIEF FINALE -->
+    <div id="state-debrief" style="display:none;">
+      <div class="hd-card" style="margin-bottom:1.5rem;">
+        <h2 id="debrief-title" style="font-family:var(--hd-font-condensed); color:var(--hd-accent); margin-top:0;">
+          DEBRIEF OPERATIVO
+        </h2>
+        <p id="debrief-planet" class="badge badge-media"></p>
+        <p id="debrief-narrative" style="white-space:pre-line; line-height:1.6;"></p>
+        <p id="debrief-reason" style="color:var(--hd-text-muted);"></p>
+
+        <div class="grid-2">
+          <section class="hd-card">
+            <h3 style="font-family:var(--hd-font-condensed); color:var(--hd-accent);">PUNTEGGIO</h3>
+            <div id="debrief-score-breakdown"></div>
+          </section>
+          <section class="hd-card">
+            <h3 style="font-family:var(--hd-font-condensed); color:var(--hd-accent);">ESITO SQUADRA</h3>
+            <p id="debrief-turns"></p>
+            <p id="debrief-fk"></p>
+            <p id="debrief-reward"></p>
+          </section>
+        </div>
+
+        <section class="hd-card" style="margin-top:1.5rem;">
+          <h3 style="font-family:var(--hd-font-condensed); color:var(--hd-accent);">REGISTRO OPERATIVO</h3>
+          <div id="debrief-event-log"></div>
+        </section>
+        <div style="display:flex; gap:0.8rem; justify-content:flex-end; margin-top:1rem;">
+          <a class="hd-btn hd-btn-secondary" href="classifica-missioni.html">Apri classifica</a>
+          <button class="hd-btn" id="btn-new-mission">Pianifica una nuova missione</button>
         </div>
       </div>
     </div>
@@ -362,6 +394,9 @@
     let selectedCards = new Set();
     let selectedStratagems = new Set();
     let activeMission = null;
+    let missionDebrief = null;
+    let dismissedDebriefMissionId = null;
+    let stateRefreshInFlight = false;
 
     window.triggerLogin = () => loginWithDiscord('sala-operativa.html');
 
@@ -421,6 +456,7 @@
       document.getElementById('state-unauth').style.display = st === 'unauth' ? 'block' : 'none';
       document.getElementById('state-create').style.display = st === 'create' ? 'block' : 'none';
       document.getElementById('state-active').style.display = st === 'active' ? 'block' : 'none';
+      document.getElementById('state-debrief').style.display = st === 'debrief' ? 'block' : 'none';
     }
 
     async function loadMissionConfig() {
@@ -441,17 +477,28 @@
     let missionSquad = [];
 
     async function refreshMissionState() {
+      if (stateRefreshInFlight) return;
+      stateRefreshInFlight = true;
       try {
         const resp = await fetchApi('/mission/state');
         if (resp.ok) {
           const data = await resp.json();
           activeMission = data.mission;
+          missionDebrief = data.debrief;
           missionEvents = data.events || [];
           missionLoadout = data.loadout || [];
           missionSquad = data.squad || [];
           if (activeMission && (activeMission.status === 'active' || activeMission.status === 'pending')) {
+            dismissedDebriefMissionId = null;
             renderActiveMission();
             showState('active');
+          } else if (
+            activeMission &&
+            ['completed', 'dead', 'aborted'].includes(activeMission.status) &&
+            dismissedDebriefMissionId !== activeMission.mission_id
+          ) {
+            renderMissionDebrief();
+            showState('debrief');
           } else {
             await loadEligibleCards();
             renderCreateView();
@@ -460,8 +507,80 @@
         }
       } catch (e) {
         console.error("Errore recupero missione:", e);
+      } finally {
+        stateRefreshInFlight = false;
       }
     }
+
+    function renderMissionDebrief() {
+      const debrief = missionDebrief || {};
+      const breakdown = debrief.score_breakdown || {};
+      const money = value => Number(value || 0).toLocaleString('it-IT', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      });
+
+      document.getElementById('debrief-title').textContent = ({
+        success: 'MISSIONE COMPLETATA',
+        failed: 'UNITÀ FAST PERDUTA',
+        aborted: 'RITIRATA TATTICA',
+      })[debrief.status] || 'DEBRIEF OPERATIVO';
+      document.getElementById('debrief-planet').textContent = debrief.planet || 'Pianeta sconosciuto';
+      document.getElementById('debrief-narrative').textContent =
+        debrief.narrative || 'Il rapporto narrativo non è disponibile.';
+      document.getElementById('debrief-reason').textContent = debrief.reason || '';
+      document.getElementById('debrief-turns').textContent =
+        `Eventi completati: ${num(debrief.turns_completed)}`;
+      document.getElementById('debrief-fk').textContent =
+        `Danni da fuoco amico (FK): ${money(debrief.friendly_fire_damage)} HP`;
+
+      const scoreLines = breakdown.eligible
+        ? [
+            `Base: ${money(breakdown.base)} punti`,
+            `Penalità eventi non risposti: −${money(breakdown.unanswered_penalty)}`,
+            `Penalità HP persi: −${money(breakdown.hp_penalty)}`,
+            `Bonus eventi superati: +${money(breakdown.event_bonus)}`,
+            `Punteggio grezzo: ${money(breakdown.raw)}`,
+            `Moltiplicatori: ×${money(breakdown.multiplier)} difficoltà ×${money(breakdown.handicap)} handicap`,
+            `PUNTEGGIO FINALE: ${money(breakdown.final)} punti`,
+          ]
+        : [
+            `PUNTEGGIO FINALE: ${money(breakdown.final)} punti`,
+            debrief.status === 'failed'
+              ? 'Punteggio azzerato per la caduta dell’unità FAST.'
+              : 'Ritirata tattica: nessun punteggio assegnato.',
+          ];
+      if (breakdown.eligible && breakdown.floor_applied) {
+        scoreLines.splice(4, 0, `Soglia minima applicata: ${money(breakdown.floor)} punti`);
+      }
+      const scoreContainer = document.getElementById('debrief-score-breakdown');
+      scoreContainer.replaceChildren();
+      for (const line of scoreLines) {
+        const row = document.createElement('p');
+        row.textContent = line;
+        scoreContainer.appendChild(row);
+      }
+
+      const rewardMessages = {
+        granted: `Premio assegnato: ${num(debrief.reward_cards)} carte.`,
+        pending: 'Premio in elaborazione.',
+        skipped_score: 'Nessun premio: punteggio sotto la soglia richiesta.',
+        skipped_cap: 'Nessun premio: limite settimanale già raggiunto.',
+        none: debrief.status === 'failed'
+          ? 'Nessun premio: unità FAST caduta in missione.'
+          : 'Nessun premio assegnato.',
+      };
+      document.getElementById('debrief-reward').textContent =
+        rewardMessages[debrief.reward_status] || 'Stato premio non disponibile.';
+      renderEventLog('debrief-event-log', true);
+    }
+
+    document.getElementById('btn-new-mission').addEventListener('click', async () => {
+      if (activeMission) dismissedDebriefMissionId = activeMission.mission_id;
+      await loadEligibleCards();
+      renderCreateView();
+      showState('create');
+    });
 
     async function loadEligibleCards() {
       try {
@@ -606,8 +725,8 @@
 
     let selectedEventStratagems = new Set();
 
-    function renderEventLog() {
-      const box = document.getElementById('event-log');
+    function renderEventLog(containerId = 'event-log', readOnly = false) {
+      const box = document.getElementById(containerId);
       if (!box) return;
       if (missionEvents.length === 0) {
         box.innerHTML = '<p style="color:var(--hd-text-muted); font-size:0.85rem;">Nessun evento registrato.</p>';
@@ -625,8 +744,13 @@
         let actionBlock = '';
 
         if (ev.status === 'scheduled') {
-          statusBadge = `<span class="badge badge-media">In Attesa</span>`;
-          outcomeText = `<span style="color:var(--hd-text-muted);">Previsto: ${dueDate}</span>`;
+          statusBadge = `<span class="badge badge-media">${readOnly ? 'Non raggiunto' : 'In Attesa'}</span>`;
+          outcomeText = readOnly
+            ? `<span style="color:var(--hd-text-muted);">Evento non raggiunto prima della conclusione.</span>`
+            : `<span style="color:var(--hd-text-muted);">Previsto: ${dueDate}</span>`;
+        } else if (ev.status === 'open' && readOnly) {
+          statusBadge = `<span class="badge badge-alta">Interrotto</span>`;
+          outcomeText = `<span style="color:var(--hd-text-muted);">Evento aperto al momento della conclusione.</span>`;
         } else if (ev.status === 'open') {
           statusBadge = `<span class="badge badge-alta">⚠️ Attivo</span>`;
           outcomeText = `<span style="color:var(--hd-accent);">Scade: ${new Date(ev.expires_at * 1000).toLocaleString('it-IT')}</span>`;
@@ -688,9 +812,15 @@
           const fkLine = (resolution.fk_damage > 0)
             ? `<span style="color:#ff3333;">💀 FK: ${resolution.fk_damage.toFixed(1)} HP</span> | `
             : '';
+          const decisionLine = resolution.auto_expired
+            ? '<span style="color:#ff6b35;">Nessuna risposta entro la scadenza</span> | '
+            : usedStrats.length
+              ? '<span>Intervento con stratagemmi</span> | '
+              : '<span>Risposta senza stratagemmi</span> | ';
 
           outcomeText = `
             <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap; margin-top:0.3rem;">
+              ${decisionLine}
               ${stratIcons ? `<div style="display:flex; gap:4px; align-items:center;">${stratIcons}</div>` : '<span style="color:var(--hd-text-muted); font-size:0.8rem;">Nessun stratagemma</span>'}
               <span style="color:var(--hd-text-muted); font-size:0.8rem;">|</span>
               <span style="font-size:0.8rem;">
@@ -928,6 +1058,12 @@
       }
     };
 
+    window.setInterval(() => {
+      if (!document.hidden) void refreshMissionState();
+    }, 30_000);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) void refreshMissionState();
+    });
     window.addEventListener('DOMContentLoaded', init);
   </script>
   <div id="tactical-overlay">
