@@ -138,6 +138,75 @@
       font-weight: 700;
     }
 
+    .mission-guide {
+      margin-bottom: 1.5rem;
+    }
+
+    .mission-guide-details {
+      overflow: hidden;
+      border: 1px solid rgba(255, 232, 0, 0.35);
+      background: linear-gradient(145deg, rgba(20, 26, 36, 0.96), rgba(7, 18, 28, 0.98));
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .mission-guide-summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.85rem 1rem;
+      background: rgba(255, 232, 0, 0.08);
+      color: var(--hd-accent);
+      cursor: pointer;
+      font-family: var(--hd-font-condensed);
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      list-style: none;
+      text-transform: uppercase;
+    }
+
+    .mission-guide-summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .mission-guide-arrow {
+      flex: 0 0 auto;
+      transition: transform 0.2s ease;
+    }
+
+    .mission-guide-details[open] .mission-guide-arrow {
+      transform: rotate(180deg);
+    }
+
+    .mission-guide-content {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+      gap: 0.75rem;
+      padding: 1rem;
+      border-top: 1px solid rgba(255, 232, 0, 0.2);
+    }
+
+    .mission-guide-topic {
+      padding: 0.8rem;
+      border: 1px solid var(--hd-border);
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .mission-guide-topic h3 {
+      margin: 0 0 0.4rem;
+      color: var(--hd-accent);
+      font-family: var(--hd-font-condensed);
+      font-size: 1rem;
+      text-transform: uppercase;
+    }
+
+    .mission-guide-topic p {
+      margin: 0;
+      color: var(--hd-text-muted);
+      font-size: 0.88rem;
+      line-height: 1.5;
+    }
+
     /* Overlay terminale outcome evento */
     #tactical-overlay {
       display: none;
@@ -211,6 +280,65 @@
   </header>
 
   <main class="container">
+
+    <div id="mission-guide" class="mission-guide" style="display:none;">
+      <details class="mission-guide-details">
+        <summary class="mission-guide-summary">
+          <span>📖 Manuale tattico — Come funziona una missione?</span>
+          <span class="mission-guide-arrow" aria-hidden="true">▼</span>
+        </summary>
+        <div class="mission-guide-content">
+          <section class="mission-guide-topic">
+            <h3>1. Prepara la squadra</h3>
+            <p>
+              Schiera da 2 a 4 carte EDST e assegna 4 stratagemmi per ogni carta. La loro rarità determina la
+              <strong>Potenza Squadra (P)</strong>, che contribuisce al budget iniziale. Scegli la durata:
+              48 ore (Facile, D6, 3 eventi) oppure 72 ore (Difficile, D8, 4 eventi). Le carte restano vincolate
+              fino alla conclusione della missione.
+            </p>
+          </section>
+          <section class="mission-guide-topic">
+            <h3>2. Gestisci il budget</h3>
+            <p>
+              Il budget dipende dalla Potenza Squadra e dal numero di eventi. Ogni stratagemma ha un costo, che viene
+              sottratto solo quando lo impieghi; ogni stratagemma può essere usato una sola volta nella missione.
+              La <strong>Potenza Evento (EP)</strong> indica invece la minaccia, non il budget.
+            </p>
+          </section>
+          <section class="mission-guide-topic">
+            <h3>3. Rispondi agli eventi</h3>
+            <p>
+              Gli eventi si aprono secondo il calendario operativo tra le 09:00 e le 17:00 (ora di Roma). Quando un
+              evento è aperto, hai 3 ore per intervenire con uno o più stratagemmi oppure passare senza spenderli.
+              Alla scadenza l'evento si risolve automaticamente senza stratagemmi e viene registrato come non risposto.
+            </p>
+          </section>
+          <section class="mission-guide-topic">
+            <h3>4. Copertura, danni e STIM</h3>
+            <p>
+              La copertura passiva si somma alla potenza degli stratagemmi impiegati: raggiungi almeno il 100% per
+              superare l'evento. La copertura insufficiente causa danni agli HP; alcuni stratagemmi possono anche
+              provocare <strong>fuoco amico (FK)</strong>. La Pistola STIM recupera il 40% dei danni dell'evento,
+              fino a 30 HP, ma non può salvarti se il danno ti porta a 0 HP.
+            </p>
+          </section>
+          <section class="mission-guide-topic">
+            <h3>5. Esito della missione</h3>
+            <p>
+              Superare un evento non conclude la missione: devi affrontare tutti gli eventi e arrivare vivo al termine.
+              A 0 HP la missione fallisce; la ritirata tattica chiude l'operazione come abort.
+            </p>
+          </section>
+          <section class="mission-guide-topic">
+            <h3>6. Premi</h3>
+            <p>
+              Se vinci una missione, ottieni un pacchetto di carte, una volta alla settimana. A fine mese, i primi
+              tre in classifica vengono premiati sul server Discord Helldivers 2 Italia.
+            </p>
+          </section>
+        </div>
+      </details>
+    </div>
 
     <!-- STATO 1: NON LOGGATO -->
     <div id="state-unauth" class="hd-card" style="display:none; text-align:center; padding:3rem 1rem;">
@@ -455,6 +583,8 @@
     }
 
     function showState(st) {
+      document.getElementById('mission-guide').style.display =
+        st === 'create' || st === 'active' ? 'block' : 'none';
       document.getElementById('state-unauth').style.display = st === 'unauth' ? 'block' : 'none';
       document.getElementById('state-create').style.display = st === 'create' ? 'block' : 'none';
       document.getElementById('state-active').style.display = st === 'active' ? 'block' : 'none';
