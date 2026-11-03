@@ -299,9 +299,11 @@
       <div class="hd-card" style="margin-bottom:1.5rem;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <div>
-            <h2 style="font-family:var(--hd-font-condensed); color:var(--hd-accent); margin:0;">
+            <h2 id="active-mission-title" style="font-family:var(--hd-font-condensed); color:var(--hd-accent); margin:0;">
               OPERAZIONE IN CORSO: SALVA IL FAUSTINO
             </h2>
+            <p id="active-mission-briefing"
+              style="white-space:pre-line; line-height:1.5; margin:0.6rem 0 0; color:var(--hd-text-muted);"></p>
             <span class="badge badge-media" id="active-planet-badge" style="margin-top:0.4rem;">Pianeta: — | Settore
               —</span>
           </div>
@@ -714,11 +716,19 @@
         }
       }
 
+      let ctx = {};
       try {
-        const ctx = JSON.parse(activeMission.context || '{}');
-        document.getElementById('active-planet-badge').textContent =
-          `${ctx.planet || '—'} | ${ctx.sector || '—'} | ${ctx.faction_display || ctx.faction || '—'}`;
-      } catch(_) {}
+        ctx = JSON.parse(activeMission.context || '{}');
+      } catch (error) {
+        console.error('Contesto missione non valido:', error);
+      }
+      document.getElementById('active-mission-title').textContent =
+        `OPERAZIONE IN CORSO: ${ctx.op_name || 'SALVA IL FAUSTINO'}`;
+      document.getElementById('active-mission-briefing').textContent =
+        ctx.briefing || 'Briefing operativo non disponibile.';
+      document.getElementById('active-planet-badge').textContent =
+        `Pianeta: ${ctx.planet || '—'} | Settore: ${ctx.sector || '—'} | ` +
+        `Fazione: ${ctx.faction_display || ctx.faction || '—'} | Bioma: ${ctx.biome || '—'}`;
 
       renderEventLog();
     }
