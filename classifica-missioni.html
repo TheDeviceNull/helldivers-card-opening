@@ -64,6 +64,57 @@
       padding: 0.5rem 1rem;
     }
 
+    .personal-missions-card {
+      margin-bottom: 1.5rem;
+      padding: 1rem;
+    }
+
+    .personal-missions-title {
+      margin: 0;
+      color: var(--hd-accent);
+      font-family: var(--hd-font-condensed);
+      text-transform: uppercase;
+    }
+
+    .personal-missions-description,
+    .personal-missions-empty {
+      color: var(--hd-text-muted);
+      line-height: 1.5;
+    }
+
+    .personal-missions-table-wrap {
+      overflow-x: auto;
+    }
+
+    .personal-missions-table {
+      width: 100%;
+      min-width: 760px;
+      border-collapse: collapse;
+    }
+
+    .personal-missions-table th,
+    .personal-missions-table td {
+      padding: 0.75rem;
+      border-bottom: 1px solid var(--hd-border);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .personal-missions-table th {
+      color: var(--hd-accent);
+      font-family: var(--hd-font-condensed);
+      text-transform: uppercase;
+    }
+
+    .personal-missions-table .personal-score {
+      white-space: nowrap;
+    }
+
+    .personal-missions-table .personal-score-final {
+      color: var(--hd-accent);
+      font-weight: 800;
+    }
+
     .leaderboard-table {
       width: 100%;
       border-collapse: collapse;
@@ -306,14 +357,26 @@
       <div>
         <h1 id="leaderboard-title" class="leaderboard-title">Ruolo d'Onore SEAF: Salva il Faustino</h1>
         <p class="leaderboard-description">
-          La classifica premia sopravvivenza ed efficienza tattica. I migliori tre Helldiver del mese ricevono un premio
-          sul server Discord Helldivers 2 Italia.
+          La classifica somma i punteggi finali delle missioni concluse. RAW e punteggio finale sono distinti:
+          il RAW determina l’accesso al pacchetto missione, mentre il finale determina la posizione in classifica.
+          I migliori tre Helldiver del mese ricevono un premio sul server Discord Helldivers 2 Italia.
         </p>
       </div>
       <label class="season-field" for="season-select">
         Seleziona stagione
         <select id="season-select" class="season-select"></select>
       </label>
+    </section>
+
+    <section class="hd-card personal-missions-card" aria-labelledby="personal-missions-title">
+      <h2 id="personal-missions-title" class="personal-missions-title">I tuoi risultati nella stagione</h2>
+      <p class="personal-missions-description">
+        Il RAW viene confrontato con la soglia del pacchetto. Il punteggio finale, dopo i moltiplicatori, contribuisce
+        alla classifica.
+      </p>
+      <div id="personal-missions-content" aria-live="polite">
+        <p class="personal-missions-empty">Caricamento dei risultati personali...</p>
+      </div>
     </section>
 
     <section class="hd-card leaderboard-card" aria-label="Classifica missioni">
@@ -339,6 +402,90 @@
   <script type="module">
     import { esc, num, fetchApi } from './assets/common.js';
 
+    const formatScore = value => num(value).toLocaleString('it-IT', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+
+    function renderPersonalMissions(missions) {
+      const container = document.getElementById('personal-missions-content');
+      container.replaceChildren();
+
+      if (missions === null) {
+        container.innerHTML = `
+          <p class="personal-missions-empty">
+            Accedi con Discord dalla <a href="sala-operativa.html">Sala Operativa</a>, poi torna qui per vedere i tuoi
+            risultati personali.
+          </p>`;
+        return;
+      }
+
+      if (!missions || missions.length === 0) {
+        const empty = document.createElement('p');
+        empty.className = 'personal-missions-empty';
+        empty.textContent = 'Non hai missioni concluse in questa stagione.';
+        container.appendChild(empty);
+        return;
+      }
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'personal-missions-table-wrap';
+      const table = document.createElement('table');
+      table.className = 'personal-missions-table';
+      table.innerHTML = `
+        <thead>
+          <tr>
+            <th scope="col">Data</th>
+            <th scope="col">Esito</th>
+            <th scope="col">Durata</th>
+            <th scope="col">RAW</th>
+            <th scope="col">Punteggio finale</th>
+            <th scope="col">Premio missione</th>
+          </tr>
+        </thead>`;
+      const body = document.createElement('tbody');
+
+      for (const mission of missions) {
+        const row = document.createElement('tr');
+        const finishedAt = Number(mission.finished_at);
+        const date = Number.isFinite(finishedAt) && finishedAt > 0
+          ? new Date(finishedAt * 1000).toLocaleString('it-IT')
+          : '—';
+        const outcome = mission.status === 'completed' ? 'Completata' : 'Unità persa';
+        const threshold = mission.reward_min_raw;
+        const rewardMessages = {
+          granted: `Pacchetto inviato: ${num(mission.reward_cards)} carte.`,
+          pending: 'Pacchetto in elaborazione.',
+          skipped_score: `Non assegnato: RAW ${formatScore(mission.score_raw)} sotto la soglia minima${threshold === null || threshold === undefined ? '' : ` di ${formatScore(threshold)}`}.`,
+          skipped_cap: 'Non assegnato: limite settimanale già raggiunto (premio già assegnato o in elaborazione).',
+          none: mission.status === 'dead'
+            ? 'Non assegnato: unità persa in missione.'
+            : 'Nessun premio assegnato.',
+        };
+        const cells = [
+          date,
+          outcome,
+          `${num(mission.duration_h)} ore`,
+          formatScore(mission.score_raw),
+          formatScore(mission.score),
+          rewardMessages[mission.reward_status] || 'Stato premio non disponibile.',
+        ];
+
+        cells.forEach((value, index) => {
+          const cell = document.createElement('td');
+          cell.textContent = value;
+          if (index === 3 || index === 4) cell.className = 'personal-score';
+          if (index === 4) cell.classList.add('personal-score-final');
+          row.appendChild(cell);
+        });
+        body.appendChild(row);
+      }
+
+      table.appendChild(body);
+      wrapper.appendChild(table);
+      container.appendChild(wrapper);
+    }
+
     async function loadLeaderboard(season = '') {
       const tbody = document.getElementById('leaderboard-body');
       try {
@@ -347,12 +494,16 @@
         if (resp.ok) {
           const data = await resp.json();
           renderTable(data.leaderboard, data.my_rank);
+          renderPersonalMissions(data.my_missions);
           populateSeasonDropdown(data.season);
         } else {
           renderMessage('Errore caricamento classifica.', true);
+          renderPersonalMissions(null);
         }
       } catch (e) {
         renderMessage('Impossibile comunicare con il server tattico.', true);
+        document.getElementById('personal-missions-content').textContent =
+          'Impossibile caricare i risultati personali.';
       }
 
       function renderMessage(message, isError = false) {
