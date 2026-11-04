@@ -207,6 +207,36 @@
       line-height: 1.5;
     }
 
+    .event-tactical-preview {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+      gap: 0.55rem 1rem;
+      margin: 0.75rem 0;
+      padding: 0.8rem;
+      border: 1px solid var(--hd-border);
+      background: rgba(0, 0, 0, 0.25);
+      font-size: 0.85rem;
+    }
+
+    .event-tactical-preview strong {
+      color: var(--hd-accent);
+    }
+
+    .event-tactical-result {
+      grid-column: 1 / -1;
+      margin: 0;
+      color: var(--hd-text-muted);
+      line-height: 1.45;
+    }
+
+    .event-tactical-result.ready {
+      color: var(--hd-success);
+    }
+
+    .event-tactical-result.short {
+      color: #ff6b35;
+    }
+
     /* Overlay terminale outcome evento */
     #tactical-overlay {
       display: none;
@@ -900,22 +930,33 @@
             const stratagemItems = available.map(l => {
               const cat = catalog.find(c => c.id === l.stratagem_id);
               if (!cat) return '';
+              const effectivePower = eventStratagemPower(cat, payload);
+              const isSelected = selectedEventStratagems.has(cat.id);
+              const isWeakMatch = (cat.tags || []).some(tag => (payload.weak_to || []).includes(tag));
+              const isResistMatch = !isWeakMatch &&
+                (cat.tags || []).some(tag => (payload.resists || []).includes(tag));
+              const powerLabel = cat.effect === 'heal'
+                ? 'Supporto: cura HP, non aumenta la copertura'
+                : `Copertura effettiva: +${effectivePower.toFixed(1)} pp` +
+                  (isWeakMatch ? ' (debolezza ×1,5)' : isResistMatch ? ' (resistenza ×0,5)' : '');
               return `
-                <label style="display:flex; flex-direction:column; align-items:center; padding:0.6rem; margin-bottom:0.4rem; background:var(--hd-surface-bright); border:1px solid var(--hd-border); cursor:pointer; text-align:center;">
-                  <input type="checkbox" value="${cat.id}"
+                <label style="display:flex; flex-direction:column; align-items:center; padding:0.6rem; margin-bottom:0.4rem; background:var(--hd-surface-bright); border:1px solid ${isSelected ? 'var(--hd-accent)' : 'var(--hd-border)'}; cursor:pointer; text-align:center;">
+                  <input type="checkbox" value="${cat.id}" ${isSelected ? 'checked' : ''}
                     style="margin-bottom:0.4rem;"
                     onchange="toggleEventStratagem('${cat.id}')">
                   <img class="strat-thumb" src="${stratagemIcon(cat.icon)}" alt="${esc(cat.name)}">
                   <strong style="font-size:0.85rem; margin-top:0.3rem;">${esc(cat.name)}</strong>
-                  <div style="font-size:0.75rem; color:var(--hd-text-muted);">Costo: ${l.cost} | Efficacia: +${cat.power}% | FK: ${cat.fk_pct}%</div>
+                  <div style="font-size:0.75rem; color:var(--hd-text-muted);">Costo: ${l.cost} | ${powerLabel} | FK: ${cat.fk_pct}%</div>
                 </label>`;
             }).join('');
 
+          const tacticalPreview = renderEventTacticalPreview(payload);
           actionBlock = `
             <div style="margin-top:1rem; border-top:1px solid var(--hd-border); padding-top:0.8rem;">
               <p style="font-size:0.85rem; color:var(--hd-text-muted); margin-bottom:0.5rem;">
-                Seleziona stratagemmi da impiegare (opzionale):
+                Scegli gli stratagemmi: il riepilogo mostra la copertura prevista e il costo totale.
               </p>
+              ${tacticalPreview}
               <div id="strat-picker-${ev.event_id}" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap:0.5rem; max-height:250px; overflow-y:auto;">
                 ${stratagemItems || '<div style="color:var(--hd-text-muted); text-align:center; padding:1rem;">Nessuno stratagemma disponibile.</div>'}
               </div>
@@ -993,9 +1034,73 @@
       }).join('');
     }
 
+    function eventStratagemPower(stratagem, payload) {
+      if (stratagem.effect === 'heal') return 0;
+      const tags = stratagem.tags || [];
+      if (tags.some(tag => (payload.weak_to || []).includes(tag))) {
+        return num(stratagem.power) * 1.5;
+      }
+      if (tags.some(tag => (payload.resists || []).includes(tag))) {
+        return num(stratagem.power) * 0.5;
+      }
+      return num(stratagem.power);
+    }
+
+    function renderEventTacticalPreview(payload) {
+      const passiveCoverage = num(payload.c_passiva);
+      const selectedStratagems = [...selectedEventStratagems]
+        .map(id => ({
+          catalog: catalog.find(item => item.id === id),
+          loadout: missionLoadout.find(item => item.stratagem_id === id),
+        }))
+        .filter(item => item.catalog && item.loadout);
+      const stratagemPower = selectedStratagems.reduce(
+        (total, item) => total + eventStratagemPower(item.catalog, payload),
+        0,
+      );
+      const totalCoverage = passiveCoverage + stratagemPower / 100;
+      const requiredPower = Math.max(0, (1 - passiveCoverage) * 100);
+      const missingPower = Math.max(0, (1 - totalCoverage) * 100);
+      const selectedCost = selectedStratagems.reduce(
+        (total, item) => total + num(item.loadout.cost),
+        0,
+      );
+      const budgetLeft = num(activeMission?.budget_left);
+      const formatTags = tags => tags.map(tag => ({
+        horde: 'orde',
+        heavy: 'unità pesanti',
+        control: 'controllo',
+      })[tag] || tag).join(', ');
+      const weakTo = formatTags(payload.weak_to || []);
+      const resists = formatTags(payload.resists || []);
+      const overBudget = selectedCost > budgetLeft;
+      const enoughCoverage = totalCoverage >= 1 && selectedStratagems.length > 0;
+      const canWin = enoughCoverage && !overBudget;
+      const resultClass = canWin ? 'ready' : 'short';
+      const resultText = overBudget
+        ? 'Costo sopra il budget disponibile: riduci la selezione.'
+        : enoughCoverage
+          ? 'Copertura sufficiente per superare l’evento. Puoi ridurre il costo se resti al 100%.'
+          : `Sotto il 100%: servono ${missingPower.toFixed(1)} pp in più per superare l’evento.`;
+
+      return `
+        <div class="event-tactical-preview" aria-live="polite">
+          <div>Minaccia: <strong>${Math.round(num(payload.E_eff))} EP</strong> <span style="color:var(--hd-text-muted);">(non è una percentuale)</span></div>
+          <div>Copertura passiva: <strong>${(passiveCoverage * 100).toFixed(1)}%</strong></div>
+          <div>Potenza necessaria: <strong>${requiredPower.toFixed(1)} pp</strong></div>
+          <div>Potenza selezionata: <strong>+${stratagemPower.toFixed(1)} pp</strong></div>
+          <div>Copertura prevista: <strong>${(totalCoverage * 100).toFixed(1)}% / 100%</strong></div>
+          <div>Costo selezionato: <strong>${selectedCost} / ${budgetLeft}</strong></div>
+          <div>Debole a: <strong>${esc(weakTo || 'nessun tag')}</strong></div>
+          <div>Resiste a: <strong>${esc(resists || 'nessun tag')}</strong></div>
+          <p class="event-tactical-result ${resultClass}">${resultText} Il FK resta un rischio separato.</p>
+        </div>`;
+    }
+
     window.toggleEventStratagem = function(sid) {
-      if (selectedEventStratagems.has(sid)) selectedEventStratagems.delete(sid);  
+      if (selectedEventStratagems.has(sid)) selectedEventStratagems.delete(sid);
       else selectedEventStratagems.add(sid);
+      renderEventLog();
     }
 
     // Mostra overlay terminale con animazione sequenziale
