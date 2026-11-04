@@ -6,101 +6,338 @@
   <title>Classifica Missioni FAST — SEAF</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./assets/theme.css">
   <style>
     .container {
-      max-width: 1000px;
+      max-width: 1100px;
       margin: 2rem auto;
       padding: 0 1rem;
     }
+
+    .leaderboard-heading {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .leaderboard-title {
+      margin: 0;
+      color: var(--hd-accent);
+      font-family: var(--hd-font-condensed);
+      font-size: clamp(1.5rem, 3vw, 2rem);
+      text-transform: uppercase;
+    }
+
+    .leaderboard-description {
+      max-width: 700px;
+      margin: 0.4rem 0 0;
+      color: var(--hd-text-muted);
+      line-height: 1.5;
+    }
+
+    .season-field {
+      display: grid;
+      flex: 0 0 auto;
+      gap: 0.35rem;
+      color: var(--hd-text-muted);
+      font-family: var(--hd-font-condensed);
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .season-select {
+      min-width: 170px;
+      padding: 0.65rem 0.8rem;
+      border: 1px solid var(--hd-border);
+      border-radius: 2px;
+      background: var(--hd-surface-bright);
+      color: var(--hd-text);
+      font: inherit;
+      text-transform: none;
+    }
+
+    .leaderboard-card {
+      padding: 0.5rem 1rem;
+    }
+
     .leaderboard-table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 1rem;
     }
-    .leaderboard-table th, .leaderboard-table td {
-      padding: 0.8rem;
-      text-align: left;
+
+    .leaderboard-table th,
+    .leaderboard-table td {
+      padding: 0.9rem 0.8rem;
       border-bottom: 1px solid var(--hd-border);
+      text-align: left;
     }
+
     .leaderboard-table th {
-      font-family: var(--hd-font-condensed);
-      text-transform: uppercase;
+      background: rgba(0, 0, 0, 0.25);
       color: var(--hd-accent);
-      background: rgba(0,0,0,0.3);
+      font-family: var(--hd-font-condensed);
+      font-size: 0.85rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
     }
-    .leaderboard-table tr:hover {
+
+    .leaderboard-table tbody tr:not(.state-row):hover {
       background: var(--hd-surface-bright);
     }
-    .leaderboard-table tr.my-row {
+
+    .leaderboard-table tbody tr.my-row {
       background: rgba(255, 232, 0, 0.1);
-      border-left: 3px solid var(--hd-accent);
+      box-shadow: inset 3px 0 var(--hd-accent);
     }
+
     .rank-col {
+      width: 70px;
+      color: var(--hd-text);
       font-family: var(--hd-font-condensed);
-      font-weight: 700;
       font-size: 1.1rem;
-      width: 60px;
+      font-weight: 800;
+    }
+
+    .leaderboard-name {
+      font-weight: 700;
+    }
+
+    .leaderboard-me {
+      margin-left: 0.4rem;
+      color: var(--hd-accent);
+      font-size: 0.75rem;
+      font-weight: 800;
+    }
+
+    .leaderboard-score {
+      color: var(--hd-accent);
+      font-weight: 800;
+      text-align: right !important;
+      white-space: nowrap;
+    }
+
+    .leaderboard-table .state-row td {
+      padding: 2rem 1rem;
+      color: var(--hd-text-muted);
+      text-align: center;
+    }
+
+    .leaderboard-table .state-row.error td {
+      color: var(--hd-danger);
+    }
+
+    @media (max-width: 700px) {
+      .container {
+        margin-top: 1.25rem;
+      }
+
+      .leaderboard-heading {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .season-select {
+        width: 100%;
+      }
+
+      .leaderboard-card {
+        padding: 0.6rem;
+        background: transparent;
+        border: 0;
+        box-shadow: none;
+      }
+
+      .leaderboard-table,
+      .leaderboard-table tbody {
+        display: block;
+        width: 100%;
+      }
+
+      .leaderboard-table thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        clip-path: inset(50%);
+      }
+
+      .leaderboard-table tbody tr:not(.state-row) {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        margin-bottom: 0.8rem;
+        overflow: hidden;
+        border: 1px solid var(--hd-border);
+        border-radius: 3px;
+        background: var(--hd-surface);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+      }
+
+      .leaderboard-table tbody tr.my-row {
+        box-shadow: inset 3px 0 var(--hd-accent), 0 4px 12px rgba(0, 0, 0, 0.25);
+      }
+
+      .leaderboard-table td {
+        display: flex;
+        min-width: 0;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 0.7rem 0.75rem;
+        border-bottom: 1px solid var(--hd-border);
+        text-align: right;
+      }
+
+      .leaderboard-table td::before {
+        color: var(--hd-text-muted);
+        content: attr(data-label);
+        font-family: var(--hd-font-condensed);
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-align: left;
+        text-transform: uppercase;
+      }
+
+      .leaderboard-table td.rank-col {
+        display: none;
+      }
+
+      .leaderboard-table td.leaderboard-name {
+        grid-column: 1 / -1;
+        justify-content: flex-start;
+        padding: 0.9rem 0.75rem;
+        text-align: left;
+      }
+
+      .leaderboard-table td.leaderboard-name::before {
+        display: inline-grid;
+        width: 2rem;
+        height: 2rem;
+        flex: 0 0 auto;
+        place-items: center;
+        border: 1px solid var(--hd-accent);
+        color: var(--hd-accent);
+        content: attr(data-rank);
+        font-size: 0.9rem;
+      }
+
+      .leaderboard-table td.leaderboard-score {
+        grid-column: 1 / -1;
+        border-bottom: 0;
+        font-size: 1.05rem;
+      }
+
+      .leaderboard-table .state-row {
+        display: block;
+        border: 1px solid var(--hd-border);
+        border-radius: 3px;
+        background: var(--hd-surface);
+      }
+
+      .leaderboard-table .state-row td {
+        display: block;
+        padding: 1.5rem 1rem;
+        text-align: center;
+      }
+
+      .leaderboard-table .state-row td::before {
+        content: none;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .top-nav-bar {
+        padding: 0 0.75rem;
+      }
+
+      .nav-controls {
+        gap: 5px;
+        margin-right: 0;
+      }
+
+      .nav-controls .btn-nav-action {
+        padding: 5px 8px;
+        font-size: 0.7rem;
+        letter-spacing: 0.04em;
+      }
+
+      .nav-controls .btn-emoji {
+        display: none;
+      }
     }
   </style>
 </head>
 <body>
 
-  <header class="top-nav">
-    <div style="display:flex; align-items:center;">
-      <a href="index.html" style="margin-left:0; font-size:1.2rem; color:var(--hd-accent);">
-        ⚡ SEAF TACTICAL
+  <header class="top-nav-bar">
+    <a href="index.html" class="nav-brand">
+      <img src="./assets/superearth.png" alt="Super Earth Logo">
+      <span>Archivio Carte Super Terra</span>
+    </a>
+    <nav class="nav-controls" aria-label="Navigazione principale">
+      <a href="index.html#collection" class="btn-nav-action">
+        <span class="btn-emoji">🗂️</span> Collezione
       </a>
-      <span style="margin-left:1rem; color:var(--hd-text-muted);">| Classifica Mensile FAST</span>
-    </div>
-    <div>
-      <a href="sala-operativa.html" style="color:var(--hd-accent); text-decoration:none; font-family:var(--hd-font-condensed); font-weight:700;">
-        🎖️ Torna alla Sala Operativa
+      <a href="index.html#auction" class="btn-nav-action">
+        <span class="btn-emoji">🏛️</span> Auction
       </a>
-    </div>
+      <a href="index.html#fusion" class="btn-nav-action">
+        <span class="btn-emoji">♻️</span> Fusione
+      </a>
+      <a href="sala-operativa.html" class="btn-nav-action">
+        <span class="btn-emoji">⚔️</span> Sala Operativa
+      </a>
+      <a href="classifica-missioni.html" class="btn-nav-action active" aria-current="page">
+        <span class="btn-emoji">🏆</span> Classifica
+      </a>
+    </nav>
   </header>
 
   <main class="container">
-    <div class="hd-card" style="margin-bottom:1.5rem; display:flex; justify-content:space-between; align-items:center;">
+    <section class="hd-card leaderboard-heading" aria-labelledby="leaderboard-title">
       <div>
-        <h2 style="font-family:var(--hd-font-condensed); color:var(--hd-accent); margin:0;">
-          RUOLO D'ONORE SEAF: SALVA IL FAUSTINO
-        </h2>
-        <p style="color:var(--hd-text-muted); margin:0.3rem 0 0 0; font-size:0.9rem;">
-          Punteggio calcolato per sopravvivenza, efficienza tattica ed handicap squadra. Premi mensili assegnati manualmente dal Comando Supremo.
+        <h1 id="leaderboard-title" class="leaderboard-title">Ruolo d'Onore SEAF: Salva il Faustino</h1>
+        <p class="leaderboard-description">
+          La classifica premia sopravvivenza ed efficienza tattica. I migliori tre Helldiver del mese ricevono un premio
+          sul server Discord Helldivers 2 Italia.
         </p>
       </div>
-      <div>
-        <select id="season-select" style="background:var(--hd-surface-bright); color:#fff; border:1px solid var(--hd-border); padding:0.4rem 0.8rem; font-family:var(--hd-font-condensed);">
-        </select>
-      </div>
-    </div>
+      <label class="season-field" for="season-select">
+        Seleziona stagione
+        <select id="season-select" class="season-select"></select>
+      </label>
+    </section>
 
-    <div class="hd-card">
+    <section class="hd-card leaderboard-card" aria-label="Classifica missioni">
       <table class="leaderboard-table">
         <thead>
           <tr>
-            <th class="rank-col">Pos</th>
-            <th>Ufficiale Tattico</th>
-            <th>Missioni</th>
-            <th>Sopravvissute</th>
-            <th style="text-align:right;">Punteggio Totale</th>
+            <th class="rank-col" scope="col">Pos.</th>
+            <th scope="col">Ufficiale tattico</th>
+            <th scope="col">Missioni</th>
+            <th scope="col">Sopravvissute</th>
+            <th class="leaderboard-score" scope="col">Punteggio totale</th>
           </tr>
         </thead>
         <tbody id="leaderboard-body">
-          <tr>
-            <td colspan="5" style="text-align:center; color:var(--hd-text-muted); padding:2rem;">
-              Caricamento ruoli d'onore in corso...
-            </td>
+          <tr class="state-row">
+            <td colspan="5">Caricamento classifica in corso...</td>
           </tr>
         </tbody>
       </table>
-    </div>
+    </section>
   </main>
 
   <script type="module">
-    import { esc, num, fetchApi, getSessionToken } from './assets/common.js';
+    import { esc, num, fetchApi } from './assets/common.js';
 
     async function loadLeaderboard(season = '') {
       const tbody = document.getElementById('leaderboard-body');
@@ -112,50 +349,65 @@
           renderTable(data.leaderboard, data.my_rank);
           populateSeasonDropdown(data.season);
         } else {
-          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--hd-danger); padding:2rem;">Errore caricamento classifica.</td></tr>';
+          renderMessage('Errore caricamento classifica.', true);
         }
       } catch (e) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--hd-danger); padding:2rem;">Impossibile comunicare con il server tattico.</td></tr>';
+        renderMessage('Impossibile comunicare con il server tattico.', true);
+      }
+
+      function renderMessage(message, isError = false) {
+        tbody.innerHTML = `
+          <tr class="state-row${isError ? ' error' : ''}">
+            <td colspan="5">${message}</td>
+          </tr>`;
       }
     }
 
     function renderTable(list, myRank) {
       const tbody = document.getElementById('leaderboard-body');
-      tbody.innerHTML = '';
+      tbody.replaceChildren();
       if (!list || list.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--hd-text-muted); padding:2rem;">Nessuna operazione registrata per questa stagione.</td></tr>';
+        tbody.innerHTML = `
+          <tr class="state-row">
+            <td colspan="5">Nessuna operazione registrata per questa stagione.</td>
+          </tr>`;
         return;
       }
 
       list.forEach(item => {
         const tr = document.createElement('tr');
-        const isMe = myRank && myRank.user_id === item.user_id;
+        const isMe = myRank && String(myRank.user_id) === String(item.user_id);
         if (isMe) tr.className = 'my-row';
+        const rank = num(item.rank);
         tr.innerHTML = `
-          <td class="rank-col">${item.rank}</td>
-          <td><strong>${esc(item.display_name)}</strong> ${isMe ? '<span style="color:var(--hd-accent); font-size:0.8rem;">(TU)</span>' : ''}</td>
-          <td>${item.total_missions}</td>
-          <td>${item.survived_missions}</td>
-          <td style="text-align:right; font-weight:700; color:var(--hd-accent);">${item.total_score}</td>
+          <td class="rank-col" data-label="Posizione">${rank}</td>
+          <td class="leaderboard-name" data-label="Ufficiale tattico" data-rank="${rank}">
+            <span>${esc(item.display_name)}</span>
+            ${isMe ? '<span class="leaderboard-me">(TU)</span>' : ''}
+          </td>
+          <td data-label="Missioni">${num(item.total_missions)}</td>
+          <td data-label="Sopravvissute">${num(item.survived_missions)}</td>
+          <td class="leaderboard-score" data-label="Punteggio totale">${num(item.total_score).toLocaleString('it-IT')}</td>
         `;
         tbody.appendChild(tr);
       });
     }
 
     function populateSeasonDropdown(currentSeason) {
-      const sel = document.getElementById('season-select');
-      if (sel.options.length > 0) return;
-      const opt = document.createElement('option');
-      opt.value = currentSeason;
-      opt.textContent = `Stagione: ${currentSeason}`;
-      sel.appendChild(opt);
+      const select = document.getElementById('season-select');
+      if (select.options.length > 0) return;
+      const option = document.createElement('option');
+      option.value = currentSeason;
+      option.textContent = currentSeason || 'Stagione corrente';
+      select.appendChild(option);
     }
 
     window.addEventListener('DOMContentLoaded', () => {
       loadLeaderboard();
-      document.getElementById('season-select').onchange = (e) => loadLeaderboard(e.target.value);
+      document.getElementById('season-select').addEventListener('change', event => {
+        loadLeaderboard(event.target.value);
+      });
     });
   </script>
 </body>
 </html>
-
