@@ -237,6 +237,28 @@
       color: #ff6b35;
     }
 
+    .event-recommendation {
+      display: inline-block;
+      margin-top: 0.3rem;
+      padding: 0.15rem 0.4rem;
+      border: 1px solid rgba(255, 232, 0, 0.55);
+      color: var(--hd-accent);
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .event-recommended-stratagem {
+      border-color: var(--hd-accent) !important;
+      box-shadow: inset 0 0 0 1px rgba(255, 232, 0, 0.18);
+    }
+
+    .event-cost-breakdown {
+      grid-column: 1 / -1;
+      padding-top: 0.45rem;
+      border-top: 1px solid var(--hd-border);
+    }
+
     /* Overlay terminale outcome evento */
     #tactical-overlay {
       display: none;
@@ -939,28 +961,36 @@
 
           // Stratagemmi disponibili (non ancora usati)
           const available = missionLoadout.filter(l => !l.used_event_id);
-            const stratagemItems = available.map(l => {
-              const cat = catalog.find(c => c.id === l.stratagem_id);
-              if (!cat) return '';
-              const effectivePower = eventStratagemPower(cat, payload);
-              const isSelected = selectedEventStratagems.has(cat.id);
-              const isWeakMatch = (cat.tags || []).some(tag => (payload.weak_to || []).includes(tag));
-              const isResistMatch = !isWeakMatch &&
-                (cat.tags || []).some(tag => (payload.resists || []).includes(tag));
-              const powerLabel = cat.effect === 'heal'
-                ? 'Supporto: cura HP, non aumenta la copertura'
-                : `Copertura effettiva: +${effectivePower.toFixed(1)} pp` +
-                  (isWeakMatch ? ' (debolezza ×1,5)' : isResistMatch ? ' (resistenza ×0,5)' : '');
-              return `
-                <label style="display:flex; flex-direction:column; align-items:center; padding:0.6rem; margin-bottom:0.4rem; background:var(--hd-surface-bright); border:1px solid ${isSelected ? 'var(--hd-accent)' : 'var(--hd-border)'}; cursor:pointer; text-align:center;">
-                  <input type="checkbox" value="${cat.id}" ${isSelected ? 'checked' : ''}
-                    style="margin-bottom:0.4rem;"
-                    onchange="toggleEventStratagem('${cat.id}')">
-                  <img class="strat-thumb" src="${stratagemIcon(cat.icon)}" alt="${esc(cat.name)}">
-                  <strong style="font-size:0.85rem; margin-top:0.3rem;">${esc(cat.name)}</strong>
-                  <div style="font-size:0.75rem; color:var(--hd-text-muted);">Costo: ${l.cost} | ${powerLabel} | FK: ${cat.fk_pct}%</div>
-                </label>`;
-            }).join('');
+          const recommendation = payload.recommendation || null;
+          const recommendedIds = new Set(
+            Array.isArray(recommendation?.stratagem_ids) ? recommendation.stratagem_ids : [],
+          );
+          const stratagemItems = available.map(l => {
+            const cat = catalog.find(c => c.id === l.stratagem_id);
+            if (!cat) return '';
+            const isRecommended = recommendedIds.has(cat.id);
+            const isSelected = selectedEventStratagems.has(cat.id);
+            const basePower = eventStratagemPower(cat, payload);
+            const previewPower = isRecommended ? basePower * 1.25 : basePower;
+            const isWeakMatch = (cat.tags || []).some(tag => (payload.weak_to || []).includes(tag));
+            const isResistMatch = !isWeakMatch &&
+              (cat.tags || []).some(tag => (payload.resists || []).includes(tag));
+            const powerLabel = cat.effect === 'heal'
+              ? 'Supporto: cura HP, non aumenta la copertura'
+              : `Copertura effettiva: +${previewPower.toFixed(1)} pp` +
+                (isWeakMatch ? ' (debolezza ×1,5)' : isResistMatch ? ' (resistenza ×0,5)' : '') +
+                (isRecommended ? ' (bonus suggerimento ×1,25)' : '');
+            return `
+              <label class="${isRecommended ? 'event-recommended-stratagem' : ''}" style="display:flex; flex-direction:column; align-items:center; padding:0.6rem; margin-bottom:0.4rem; background:var(--hd-surface-bright); border:1px solid ${isSelected ? 'var(--hd-accent)' : 'var(--hd-border)'}; cursor:pointer; text-align:center;">
+                <input type="checkbox" value="${cat.id}" ${isSelected ? 'checked' : ''}
+                  style="margin-bottom:0.4rem;"
+                  onchange="toggleEventStratagem('${cat.id}')">
+                <img class="strat-thumb" src="${stratagemIcon(cat.icon)}" alt="${esc(cat.name)}">
+                <strong style="font-size:0.85rem; margin-top:0.3rem;">${esc(cat.name)}</strong>
+                ${isRecommended ? '<span class="event-recommendation">Consigliato · sconto e bonus</span>' : ''}
+                <div style="font-size:0.75rem; color:var(--hd-text-muted);">Costo: ${l.cost} | ${powerLabel} | FK: ${cat.fk_pct}%</div>
+              </label>`;
+          }).join('');
 
           const tacticalPreview = renderEventTacticalPreview(payload);
           actionBlock = `
@@ -1010,6 +1040,19 @@
             : usedStrats.length
               ? '<span>Intervento con stratagemmi</span> | '
               : '<span>Risposta senza stratagemmi</span> | ';
+          const costDetails = resolution.stratagem_cost;
+          const bonusDetails = resolution.recommendation_bonus || {};
+          const costBonusLine = costDetails
+            ? `
+              <div class="event-cost-breakdown" style="font-size:0.78rem; color:var(--hd-text-muted);">
+                Costo base: <strong>${num(costDetails.base_cost)}</strong> |
+                Sconto: <strong>${num(costDetails.discount)}</strong> |
+                Addebitato: <strong>${num(costDetails.charged_cost)}</strong>
+                ${num(bonusDetails.bonus_power) > 0
+                  ? `| Bonus copertura: <strong>+${num(bonusDetails.bonus_power).toFixed(2)} pp</strong>`
+                  : ''}
+              </div>`
+            : '';
 
           outcomeText = `
             <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap; margin-top:0.3rem;">
@@ -1020,6 +1063,7 @@
                 ${healLine}${fkLine}Copertura: <strong>${(resolution.c_tot * 100).toFixed(1)}%</strong> |
                 HP persi: <strong style="color:${resolution.hp_lost > 0 ? '#ff6b35' : 'inherit'};">${resolution.hp_lost?.toFixed(1) ?? '—'}</strong>
               </span>
+              ${costBonusLine}
               <span style="color:var(--hd-text-muted); font-size:0.75rem;">— ${resolvedDate}</span>
             </div>`;
         }
@@ -1066,15 +1110,34 @@
           loadout: missionLoadout.find(item => item.stratagem_id === id),
         }))
         .filter(item => item.catalog && item.loadout);
+      const recommendation = payload.recommendation || null;
+      const recommendedIds = new Set(
+        Array.isArray(recommendation?.stratagem_ids) ? recommendation.stratagem_ids : [],
+      );
+      const selectedRecommended = selectedStratagems.filter(
+        item => recommendedIds.has(item.catalog.id) && item.catalog.effect === 'damage',
+      );
       const stratagemPower = selectedStratagems.reduce(
-        (total, item) => total + eventStratagemPower(item.catalog, payload),
+        (total, item) => total + eventStratagemPower(item.catalog, payload) *
+          (recommendedIds.has(item.catalog.id) && item.catalog.effect === 'damage' ? 1.25 : 1),
         0,
       );
       const totalCoverage = passiveCoverage + stratagemPower / 100;
       const requiredPower = Math.max(0, (1 - passiveCoverage) * 100);
       const missingPower = Math.max(0, (1 - totalCoverage) * 100);
-      const selectedCost = selectedStratagems.reduce(
+      const baseCost = selectedStratagems.reduce(
         (total, item) => total + num(item.loadout.cost),
+        0,
+      );
+      const recommendedBaseCost = selectedRecommended.reduce(
+        (total, item) => total + num(item.loadout.cost),
+        0,
+      );
+      const discountedRecommendedCost = Math.ceil(recommendedBaseCost * 0.75);
+      const discount = recommendedBaseCost - discountedRecommendedCost;
+      const chargedCost = baseCost - discount;
+      const bonusPower = selectedRecommended.reduce(
+        (total, item) => total + eventStratagemPower(item.catalog, payload) * 0.25,
         0,
       );
       const budgetLeft = num(activeMission?.budget_left);
@@ -1085,27 +1148,37 @@
       })[tag] || tag).join(', ');
       const weakTo = formatTags(payload.weak_to || []);
       const resists = formatTags(payload.resists || []);
-      const overBudget = selectedCost > budgetLeft;
+      const overBudget = chargedCost > budgetLeft;
       const enoughCoverage = totalCoverage >= 1 && selectedStratagems.length > 0;
       const canWin = enoughCoverage && !overBudget;
       const resultClass = canWin ? 'ready' : 'short';
       const resultText = overBudget
-        ? 'Costo sopra il budget disponibile: riduci la selezione.'
+        ? 'Addebito sopra il budget disponibile: riduci la selezione.'
         : enoughCoverage
-          ? 'Copertura sufficiente per superare l’evento. Puoi ridurre il costo se resti al 100%.'
+          ? 'Copertura sufficiente per superare l’evento. Il costo è una stima; il server verifica la risposta.'
           : `Sotto il 100%: servono ${missingPower.toFixed(1)} pp in più per superare l’evento.`;
+      const recommendationNote = recommendation?.reason === 'budget_insufficient'
+        ? 'Nessuno stratagemma offensivo era acquistabile quando l’evento è stato aperto.'
+        : recommendation?.reason === 'no_offensive_stratagem_available'
+          ? 'Il loadout non contiene stratagemmi offensivi disponibili per questo evento.'
+          : '';
 
       return `
         <div class="event-tactical-preview" aria-live="polite">
+          ${recommendationNote ? `<div class="event-cost-breakdown">${esc(recommendationNote)}</div>` : ''}
+          ${recommendedIds.size ? '<div class="event-cost-breakdown"><strong>Stratagemmi consigliati:</strong> bonus +25% alla copertura; sconto 25% sul costo selezionato, arrotondato per eccesso.</div>' : ''}
           <div>Minaccia: <strong>${Math.round(num(payload.E_eff))} EP</strong> <span style="color:var(--hd-text-muted);">(non è una percentuale)</span></div>
           <div>Copertura passiva: <strong>${(passiveCoverage * 100).toFixed(1)}%</strong></div>
           <div>Potenza necessaria: <strong>${requiredPower.toFixed(1)} pp</strong></div>
           <div>Potenza selezionata: <strong>+${stratagemPower.toFixed(1)} pp</strong></div>
+          ${bonusPower > 0 ? `<div>Bonus suggerimento: <strong>+${bonusPower.toFixed(1)} pp</strong></div>` : ''}
           <div>Copertura prevista: <strong>${(totalCoverage * 100).toFixed(1)}% / 100%</strong></div>
-          <div>Costo selezionato: <strong>${selectedCost} / ${budgetLeft}</strong></div>
+          <div>Costo base selezionato: <strong>${baseCost}</strong></div>
+          <div>Sconto stimato: <strong>${discount}</strong></div>
+          <div>Addebito stimato: <strong>${chargedCost} / ${budgetLeft}</strong></div>
           <div>Debole a: <strong>${esc(weakTo || 'nessun tag')}</strong></div>
           <div>Resiste a: <strong>${esc(resists || 'nessun tag')}</strong></div>
-          <p class="event-tactical-result ${resultClass}">${resultText} Il FK resta un rischio separato.</p>
+          <p class="event-tactical-result ${resultClass}">${resultText} Il FK resta un rischio separato; potenza e costo effettivi sono determinati dal server.</p>
         </div>`;
     }
 
@@ -1180,7 +1253,13 @@
       // Copertura
       await q('[ CALCOLO COPERTURA TATTICA ]', 'dim', 300);
       await q(`  Copertura passiva:    ${(resolution.c_passiva * 100).toFixed(1)}%`, '', 400);
-      await q(`  Potenza stratagemmi:  +${(resolution.strat_power_sum).toFixed(1)} pp`, '', 350);
+      await q(`  Potenza stratagemmi:  +${(resolution.strat_power_applied_sum ?? resolution.strat_power_sum).toFixed(1)} pp`, '', 350);
+      if (num(resolution.recommendation_bonus?.bonus_power) > 0) {
+        await q(`  Bonus suggerimento:   +${num(resolution.recommendation_bonus.bonus_power).toFixed(2)} pp`, 'ok', 300);
+      }
+      if (resolution.stratagem_cost) {
+        await q(`  Costo: ${resolution.stratagem_cost.base_cost} base, sconto ${resolution.stratagem_cost.discount}, addebitato ${resolution.stratagem_cost.charged_cost}`, '', 300);
+      }
       await q(`  Copertura totale:     ${(resolution.c_tot * 100).toFixed(1)}%`, resolution.c_tot >= 1.0 ? 'ok' : 'warn', 400);
       await q('', '', 200);
 
