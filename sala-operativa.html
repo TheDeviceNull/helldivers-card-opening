@@ -513,7 +513,7 @@
         <div style="margin-top:1.5rem;">
           <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:0.3rem;">
             <span>Integrità Soldato FAST: <strong id="mission-hp-val">100</strong>/100 HP</span>
-            <span>Budget Disponibile: <strong id="mission-budget-val" style="color:var(--hd-accent);">0</strong></span>
+            <span>Budget Disponibile: <strong id="mission-budget-val" style="color:var(--hd-accent);">0</strong><small id="mission-budget-recharged" style="margin-left:0.35rem; color:var(--hd-text-muted);"></small></span>
           </div>
           <div class="health-bar-bg">
             <div id="mission-hp-bar" class="health-bar-fill" style="width:100%;"></div>
@@ -816,15 +816,23 @@
       catalog.forEach(s => {
         const div = document.createElement('div');
         div.className = 'selectable-item' + (selectedStratagems.has(s.id) ? ' selected' : '');
+        const effectLabel = s.effect === 'shield'
+          ? 'Protegge dal FK per un evento'
+          : s.effect === 'resupply'
+            ? 'A budget ≤ 0: ricarica metà del budget iniziale, una volta'
+            : s.effect === 'heal'
+              ? 'Cura HP'
+              : `FK: ${s.fk_pct}%`;
+        const powerLabel = s.effect === 'damage' ? `+${s.power}%` : '';
         div.innerHTML = `
           <div style="display:flex; align-items:center;">
             <img class="strat-thumb" src="${stratagemIcon(s.icon)}" alt="${esc(s.name)}">
             <div>
               <strong>${esc(s.name)}</strong>
-              <div style="font-size:0.75rem; color:var(--hd-text-muted);">Costo: ${s.cost} | FK: ${s.fk_pct}%</div>
+              <div style="font-size:0.75rem; color:var(--hd-text-muted);">Costo: ${s.cost} | ${effectLabel}</div>
             </div>
           </div>
-          <span style="font-family:var(--hd-font-condensed); font-weight:700; color:var(--hd-accent);">+${s.power}%</span>
+          ${powerLabel ? `<span style="font-family:var(--hd-font-condensed); font-weight:700; color:var(--hd-accent);">${powerLabel}</span>` : ''}
         `;
         const img = div.querySelector('img');
         attachIconFallback(img);
@@ -885,6 +893,9 @@
       if (!activeMission) return;
       document.getElementById('mission-hp-val').textContent = Math.round(activeMission.hp);
       document.getElementById('mission-budget-val').textContent = activeMission.budget_left;
+      const budgetRecharged = num(activeMission.budget_recharged);
+      document.getElementById('mission-budget-recharged').textContent =
+        budgetRecharged > 0 ? `(Rifornimenti +${budgetRecharged})` : '';
       document.getElementById('mission-hp-bar').style.width = `${Math.max(0, activeMission.hp)}%`;
 
       const squadList = document.getElementById('mission-squad-list');
@@ -970,6 +981,9 @@
             if (!cat) return '';
             const isRecommended = recommendedIds.has(cat.id);
             const isSelected = selectedEventStratagems.has(cat.id);
+            const isResupply = cat.effect === 'resupply';
+            const resupplyAvailable = num(activeMission?.budget_left) <= 0;
+            const isDisabled = isResupply && !resupplyAvailable;
             const basePower = eventStratagemPower(cat, payload);
             const previewPower = isRecommended ? basePower * 1.25 : basePower;
             const isWeakMatch = (cat.tags || []).some(tag => (payload.weak_to || []).includes(tag));
@@ -977,18 +991,24 @@
               (cat.tags || []).some(tag => (payload.resists || []).includes(tag));
             const powerLabel = cat.effect === 'heal'
               ? 'Supporto: cura HP, non aumenta la copertura'
-              : `Copertura effettiva: +${previewPower.toFixed(1)} pp` +
-                (isWeakMatch ? ' (debolezza ×1,5)' : isResistMatch ? ' (resistenza ×0,5)' : '') +
-                (isRecommended ? ' (bonus suggerimento ×1,25)' : '');
+              : cat.effect === 'shield'
+                ? 'Annulla tutti i tiri FK di questo evento'
+                : isResupply
+                  ? `Ricarica ${Math.floor(num(activeMission?.budget_total) / 2)} SC, una volta per missione`
+                  : `Copertura effettiva: +${previewPower.toFixed(1)} pp` +
+                    (isWeakMatch ? ' (debolezza ×1,5)' : isResistMatch ? ' (resistenza ×0,5)' : '') +
+                    (isRecommended ? ' (bonus suggerimento ×1,25)' : '');
             return `
-              <label class="${isRecommended ? 'event-recommended-stratagem' : ''}" style="display:flex; flex-direction:column; align-items:center; padding:0.6rem; margin-bottom:0.4rem; background:var(--hd-surface-bright); border:1px solid ${isSelected ? 'var(--hd-accent)' : 'var(--hd-border)'}; cursor:pointer; text-align:center;">
+              <label class="${isRecommended ? 'event-recommended-stratagem' : ''}" style="display:flex; flex-direction:column; align-items:center; padding:0.6rem; margin-bottom:0.4rem; background:var(--hd-surface-bright); border:1px solid ${isSelected ? 'var(--hd-accent)' : 'var(--hd-border)'}; cursor:${isDisabled ? 'not-allowed' : 'pointer'}; opacity:${isDisabled ? '0.55' : '1'}; text-align:center;">
                 <input type="checkbox" value="${cat.id}" ${isSelected ? 'checked' : ''}
+                  ${isDisabled ? 'disabled' : ''}
                   style="margin-bottom:0.4rem;"
                   onchange="toggleEventStratagem('${cat.id}')">
                 <img class="strat-thumb" src="${stratagemIcon(cat.icon)}" alt="${esc(cat.name)}">
                 <strong style="font-size:0.85rem; margin-top:0.3rem;">${esc(cat.name)}</strong>
                 ${isRecommended ? '<span class="event-recommendation">Consigliato · sconto e bonus</span>' : ''}
-                <div style="font-size:0.75rem; color:var(--hd-text-muted);">Costo: ${l.cost} | ${powerLabel} | FK: ${cat.fk_pct}%</div>
+                <div style="font-size:0.75rem; color:var(--hd-text-muted);">Costo: ${l.cost} | ${powerLabel}</div>
+                ${isDisabled ? '<div style="font-size:0.7rem; color:var(--hd-text-muted);">Disponibile solo con budget esaurito</div>' : ''}
               </label>`;
           }).join('');
 
@@ -1035,6 +1055,12 @@
           const fkLine = (resolution.fk_damage > 0)
             ? `<span style="color:#ff3333;">💀 FK: ${resolution.fk_damage.toFixed(1)} HP</span> | `
             : '';
+          const shieldLine = resolution.shield_protected
+            ? '<span style="color:#7cfc00;">🛡 FK annullato</span> | '
+            : '';
+          const resupplyLine = num(resolution.budget_recharged) > 0
+            ? `<span style="color:#7cfc00;">📦 Rifornimenti: +${num(resolution.budget_recharged)} SC</span> | `
+            : '';
           const decisionLine = resolution.auto_expired
             ? '<span style="color:#ff6b35;">Nessuna risposta entro la scadenza</span> | '
             : usedStrats.length
@@ -1060,7 +1086,7 @@
               ${stratIcons ? `<div style="display:flex; gap:4px; align-items:center;">${stratIcons}</div>` : '<span style="color:var(--hd-text-muted); font-size:0.8rem;">Nessun stratagemma</span>'}
               <span style="color:var(--hd-text-muted); font-size:0.8rem;">|</span>
               <span style="font-size:0.8rem;">
-                ${healLine}${fkLine}Copertura: <strong>${(resolution.c_tot * 100).toFixed(1)}%</strong> |
+                ${healLine}${shieldLine}${resupplyLine}${fkLine}Copertura: <strong>${(resolution.c_tot * 100).toFixed(1)}%</strong> |
                 HP persi: <strong style="color:${resolution.hp_lost > 0 ? '#ff6b35' : 'inherit'};">${resolution.hp_lost?.toFixed(1) ?? '—'}</strong>
               </span>
               ${costBonusLine}
@@ -1091,7 +1117,7 @@
     }
 
     function eventStratagemPower(stratagem, payload) {
-      if (stratagem.effect === 'heal') return 0;
+      if (stratagem.effect !== 'damage') return 0;
       const tags = stratagem.tags || [];
       if (tags.some(tag => (payload.weak_to || []).includes(tag))) {
         return num(stratagem.power) * 1.5;
@@ -1117,6 +1143,9 @@
       const selectedRecommended = selectedStratagems.filter(
         item => recommendedIds.has(item.catalog.id) && item.catalog.effect === 'damage',
       );
+      const shieldSelected = selectedStratagems.some(
+        item => item.catalog.effect === 'shield',
+      );
       const stratagemPower = selectedStratagems.reduce(
         (total, item) => total + eventStratagemPower(item.catalog, payload) *
           (recommendedIds.has(item.catalog.id) && item.catalog.effect === 'damage' ? 1.25 : 1),
@@ -1141,6 +1170,13 @@
         0,
       );
       const budgetLeft = num(activeMission?.budget_left);
+      const selectedResupply = selectedStratagems.some(
+        item => item.catalog.effect === 'resupply',
+      );
+      const restoredBudget = selectedResupply && budgetLeft <= 0
+        ? Math.floor(num(activeMission?.budget_total) / 2)
+        : 0;
+      const effectiveBudget = budgetLeft + restoredBudget;
       const formatTags = tags => tags.map(tag => ({
         horde: 'orde',
         heavy: 'unità pesanti',
@@ -1148,12 +1184,12 @@
       })[tag] || tag).join(', ');
       const weakTo = formatTags(payload.weak_to || []);
       const resists = formatTags(payload.resists || []);
-      const overBudget = chargedCost > budgetLeft;
+      const overBudget = chargedCost > effectiveBudget;
       const enoughCoverage = totalCoverage >= 1 && selectedStratagems.length > 0;
       const canWin = enoughCoverage && !overBudget;
       const resultClass = canWin ? 'ready' : 'short';
       const resultText = overBudget
-        ? 'Addebito sopra il budget disponibile: riduci la selezione.'
+        ? 'Addebito sopra il budget disponibile dopo il rifornimento: riduci la selezione.'
         : enoughCoverage
           ? 'Copertura sufficiente per superare l’evento. Il costo è una stima; il server verifica la risposta.'
           : `Sotto il 100%: servono ${missingPower.toFixed(1)} pp in più per superare l’evento.`;
@@ -1175,10 +1211,11 @@
           <div>Copertura prevista: <strong>${(totalCoverage * 100).toFixed(1)}% / 100%</strong></div>
           <div>Costo base selezionato: <strong>${baseCost}</strong></div>
           <div>Sconto stimato: <strong>${discount}</strong></div>
-          <div>Addebito stimato: <strong>${chargedCost} / ${budgetLeft}</strong></div>
+          ${restoredBudget ? `<div>Rifornimenti: <strong>+${restoredBudget} SC</strong></div>` : ''}
+          <div>Addebito stimato: <strong>${chargedCost} / ${effectiveBudget}</strong></div>
           <div>Debole a: <strong>${esc(weakTo || 'nessun tag')}</strong></div>
           <div>Resiste a: <strong>${esc(resists || 'nessun tag')}</strong></div>
-          <p class="event-tactical-result ${resultClass}">${resultText} Il FK resta un rischio separato; potenza e costo effettivi sono determinati dal server.</p>
+          <p class="event-tactical-result ${resultClass}">${resultText} ${shieldSelected ? 'Il Relay annulla il FK per questo evento.' : 'Il FK resta un rischio separato.'} Potenza e costo effettivi sono determinati dal server.</p>
         </div>`;
     }
 
@@ -1224,7 +1261,11 @@
 
       // Tiri FK
       const fkRolls = resolution.fk_rolls || [];
-      if (fkRolls.length > 0) {
+      if (resolution.shield_protected) {
+        await q('[ GENERATORE DI SCUDI ]', 'dim', 300);
+        await q('  Relay generatore di scudi — FUOCO AMICO ANNULLATO', 'ok', 400);
+        await q('', '', 150);
+      } else if (fkRolls.length > 0) {
         await q('[ VALUTAZIONE RISCHIO FUOCO AMICO ]', 'dim', 300);
         for (const roll of fkRolls) {
           const stratName = catalog.find(c => c.id === roll.stratagem_id)?.name || roll.stratagem_id;
@@ -1259,6 +1300,9 @@
       }
       if (resolution.stratagem_cost) {
         await q(`  Costo: ${resolution.stratagem_cost.base_cost} base, sconto ${resolution.stratagem_cost.discount}, addebitato ${resolution.stratagem_cost.charged_cost}`, '', 300);
+      }
+      if (num(resolution.budget_recharged) > 0) {
+        await q(`  Rifornimenti: +${num(resolution.budget_recharged)} SC`, 'ok', 300);
       }
       await q(`  Copertura totale:     ${(resolution.c_tot * 100).toFixed(1)}%`, resolution.c_tot >= 1.0 ? 'ok' : 'warn', 400);
       await q('', '', 200);

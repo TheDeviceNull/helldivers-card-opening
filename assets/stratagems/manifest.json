@@ -1,5 +1,5 @@
 {
-  "catalog_version": "79325133890e",
+  "catalog_version": "b9efa124cbb6",
   "files": {
     "attacco_aereo_con_gas_eagle.png": "079c789269d2a4c0",
     "attacco_aereo_con_napalm_eagle.png": "e5e8c2cdd3bbb217",
@@ -16,7 +16,9 @@
     "laser_orbitale.png": "1a194201c43597df",
     "missili_eagle_da_110_mm.png": "396423d6853e7791",
     "mitragliamento_a_tappeto_eagle.png": "a2446f22282384f8",
-    "pistola_stim.png": "00ca8ed27ad6e750",
+    "pistola_stim.png": "bf3985f316b2ea29",
+    "relay_generatore_di_scudi.png": "2e9ee62aea66a5ef",
+    "rifornimenti.png": "9f45c1c8cf973a41",
     "sbarramento_orbitale_al_napalm.png": "55b3ef1b9de0d63b",
     "sbarramento_orbitale_esplosivo_da_120_mm.png": "3b7f0b8c0588841f",
     "sbarramento_orbitale_esplosivo_da_380_mm.png": "6082f850f4aea51a",
