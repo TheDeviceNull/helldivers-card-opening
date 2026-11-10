@@ -819,7 +819,7 @@
         const effectLabel = s.effect === 'shield'
           ? 'Protegge dal FK per un evento'
           : s.effect === 'resupply'
-            ? 'A budget ≤ 0: ricarica metà del budget iniziale, una volta'
+            ? 'Budget < metà: ricarica metà del budget iniziale, una volta per missione'
             : s.effect === 'heal'
               ? 'Cura HP'
               : `FK: ${s.fk_pct}%`;
@@ -982,7 +982,8 @@
             const isRecommended = recommendedIds.has(cat.id);
             const isSelected = selectedEventStratagems.has(cat.id);
             const isResupply = cat.effect === 'resupply';
-            const resupplyAvailable = num(activeMission?.budget_left) <= 0;
+            const resupplyAvailable =
+              num(activeMission?.budget_left) < num(activeMission?.budget_total) / 2;
             const isDisabled = isResupply && !resupplyAvailable;
             const basePower = eventStratagemPower(cat, payload);
             const previewPower = isRecommended ? basePower * 1.25 : basePower;
@@ -1173,7 +1174,7 @@
       const selectedResupply = selectedStratagems.some(
         item => item.catalog.effect === 'resupply',
       );
-      const restoredBudget = selectedResupply && budgetLeft <= 0
+      const restoredBudget = selectedResupply && budgetLeft < num(activeMission?.budget_total) / 2
         ? Math.floor(num(activeMission?.budget_total) / 2)
         : 0;
       const effectiveBudget = budgetLeft + restoredBudget;
