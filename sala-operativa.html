@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="it">
 
 <head>
@@ -580,6 +580,7 @@
 
   <script type="module">
     import { STRATAGEM_ICON_BASE } from './assets/config.js';
+    import { playLoop, playStinger, mountMuteButton } from './assets/audio.js';
     import { esc, num, fetchApi, loginWithDiscord, getSessionToken, stratagemIcon, attachIconFallback } from './assets/common.js';
 
     let config = null;
@@ -591,10 +592,43 @@
     let missionDebrief = null;
     let dismissedDebriefMissionId = null;
     let stateRefreshInFlight = false;
+    let currentView = null;
+    let tacticalOverlayActive = false;
+
+    const FACTION_LOOPS = {
+      terminid: 'hiveworld_loop',
+      automaton: 'automaton_loop',
+      illuminate: 'illuminate_loop',
+    };
+
+    // Seleziona il loop in base a vista, evento aperto e fazione (idempotente)
+    function updateAudio() {
+      if (tacticalOverlayActive) return; // nessun cambio traccia durante il rapporto terminale
+      if (currentView === 'create') {
+        playLoop('ready');
+      } else if (currentView === 'debrief') {
+        playLoop('lobby');
+      } else if (currentView === 'active') {
+        if (!missionEvents.some(ev => ev.status === 'open')) {
+          playLoop('dive_loop');
+          return;
+        }
+        let faction = 'terminid';
+        try {
+          faction = JSON.parse(activeMission?.context || '{}').faction || 'terminid';
+        } catch {
+          /* contesto non valido: default terminid */
+        }
+        playLoop(FACTION_LOOPS[faction] || FACTION_LOOPS.terminid);
+      } else {
+        playLoop(null);
+      }
+    }
 
     window.triggerLogin = () => loginWithDiscord('sala-operativa.html');
 
     async function init() {
+      mountMuteButton();
       const token = getSessionToken();
       if (!token) {
         // Nessuna sessione: redirect all'home per il login Discord
@@ -653,6 +687,8 @@
       document.getElementById('state-create').style.display = st === 'create' ? 'block' : 'none';
       document.getElementById('state-active').style.display = st === 'active' ? 'block' : 'none';
       document.getElementById('state-debrief').style.display = st === 'debrief' ? 'block' : 'none';
+      currentView = st;
+      updateAudio();
     }
 
     async function loadMissionConfig() {
@@ -1228,6 +1264,7 @@
 
     // Mostra overlay terminale con animazione sequenziale
     async function showTacticalOverlay(resolution, eventName) {
+      tacticalOverlayActive = true;
       const term = document.getElementById('tactical-terminal');
       const overlay = document.getElementById('tactical-overlay');
       const btn = document.getElementById('btn-close-overlay');
@@ -1332,11 +1369,15 @@
       }
       await q('══════════════════════════════════════', 'dim', 300);
 
+      // Vittoria evento: stinger casuale, una sola volta, a fine sequenza
+      if (resolution.c_tot >= 1.0) playStinger(['win2', 'win4']);
       btn.style.display = 'block';
     }
 
     window.closeTacticalOverlay = function() {
       document.getElementById('tactical-overlay').classList.remove('active');
+      tacticalOverlayActive = false;
+      updateAudio();
     }
     window.playEvent = async function(eventId, missionId) {
       try {
@@ -1410,6 +1451,7 @@
         const res = await resp.json();
         if (res.ok) {
           currentOfferId = null;
+          playStinger('buildup'); // avvio missione: una sola volta
           await refreshMissionState();
         } else if (res.error === 'offer_expired') {
           currentOfferId = null;

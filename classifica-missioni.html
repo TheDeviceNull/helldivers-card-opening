@@ -404,6 +404,7 @@
 
   <script type="module">
     import { esc, num, fetchApi } from './assets/common.js';
+    import { playPlaylist, mountMuteButton } from './assets/audio.js';
 
     const formatScore = value => num(value).toLocaleString('it-IT', {
       minimumFractionDigits: 2,
@@ -556,7 +557,19 @@
       select.appendChild(option);
     }
 
+    // Colonna sonora: playlist casuale da soundtracks.json
+    async function startSoundtrack() {
+      try {
+        const resp = await fetch('assets/soundtracks.json');
+        if (resp.ok) playPlaylist(await resp.json());
+      } catch (e) {
+        console.error('Errore caricamento colonna sonora:', e);
+      }
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
+      mountMuteButton();
+      void startSoundtrack();
       loadLeaderboard();
       document.getElementById('season-select').addEventListener('change', event => {
         loadLeaderboard(event.target.value);
