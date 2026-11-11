@@ -1034,7 +1034,8 @@
                   ? `Ricarica ${Math.floor(num(activeMission?.budget_total) / 2)} SC, una volta per missione`
                   : `Copertura effettiva: +${previewPower.toFixed(1)} pp` +
                     (isWeakMatch ? ' (debolezza ×1,5)' : isResistMatch ? ' (resistenza ×0,5)' : '') +
-                    (isRecommended ? ' (bonus suggerimento ×1,25)' : '');
+                    (isRecommended ? ' (bonus suggerimento ×1,25)' : '') +
+                    (cat.fk_pct > 0 ? ` | FK: ${cat.fk_pct}%` : '');
             return `
               <label class="${isRecommended ? 'event-recommended-stratagem' : ''}" style="display:flex; flex-direction:column; align-items:center; padding:0.6rem; margin-bottom:0.4rem; background:var(--hd-surface-bright); border:1px solid ${isSelected ? 'var(--hd-accent)' : 'var(--hd-border)'}; cursor:${isDisabled ? 'not-allowed' : 'pointer'}; opacity:${isDisabled ? '0.55' : '1'}; text-align:center;">
                 <input type="checkbox" value="${cat.id}" ${isSelected ? 'checked' : ''}
