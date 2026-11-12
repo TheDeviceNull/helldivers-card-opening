@@ -370,8 +370,7 @@
             <p>
               La copertura passiva si somma alla potenza degli stratagemmi impiegati: raggiungi almeno il 100% per
               superare l'evento. La copertura insufficiente causa danni agli HP; alcuni stratagemmi possono anche
-              provocare <strong>fuoco amico (FK)</strong>. La Pistola STIM recupera il 40% dei danni dell'evento,
-              fino a 30 HP, ma non può salvarti se il danno ti porta a 0 HP.
+              provocare <strong>fuoco amico (FK)</strong>. La Pistola STIM ripristina fino a 30 HP mancanti prima dell'impatto dell'evento (usabile solo se HP &lt; 100).
             </p>
           </section>
           <section class="mission-guide-topic">
@@ -857,7 +856,7 @@
           : s.effect === 'resupply'
             ? 'Budget < metà: ricarica metà del budget iniziale, una volta per missione'
             : s.effect === 'heal'
-              ? 'Cura HP'
+              ? 'Ad HP < 100: ripristina fino a 30 HP prima dell\'evento'
               : `FK: ${s.fk_pct}%`;
         const powerLabel = s.effect === 'damage' ? `+${s.power}%` : '';
         div.innerHTML = `
@@ -1020,14 +1019,16 @@
             const isResupply = cat.effect === 'resupply';
             const resupplyAvailable =
               num(activeMission?.budget_left) < num(activeMission?.budget_total) / 2;
-            const isDisabled = isResupply && !resupplyAvailable;
+            const isHeal = cat.effect === 'heal';
+            const healAvailable = num(activeMission?.hp) < 100;
+            const isDisabled = (isResupply && !resupplyAvailable) || (isHeal && !healAvailable);
             const basePower = eventStratagemPower(cat, payload);
             const previewPower = isRecommended ? basePower * 1.25 : basePower;
             const isWeakMatch = (cat.tags || []).some(tag => (payload.weak_to || []).includes(tag));
             const isResistMatch = !isWeakMatch &&
               (cat.tags || []).some(tag => (payload.resists || []).includes(tag));
-            const powerLabel = cat.effect === 'heal'
-              ? 'Supporto: cura HP, non aumenta la copertura'
+            const powerLabel = isHeal
+              ? 'Supporto: ripristina fino a 30 HP prima dell\'evento'
               : cat.effect === 'shield'
                 ? 'Annulla tutti i tiri FK di questo evento'
                 : isResupply
@@ -1046,7 +1047,7 @@
                 <strong style="font-size:0.85rem; margin-top:0.3rem;">${esc(cat.name)}</strong>
                 ${isRecommended ? '<span class="event-recommendation">Consigliato · sconto e bonus</span>' : ''}
                 <div style="font-size:0.75rem; color:var(--hd-text-muted);">Costo: ${l.cost} | ${powerLabel}</div>
-                ${isDisabled ? '<div style="font-size:0.7rem; color:var(--hd-text-muted);">Disponibile solo con budget esaurito</div>' : ''}
+                ${isDisabled ? `<div style="font-size:0.7rem; color:var(--hd-text-muted);">${isHeal ? 'Disponibile solo con HP < 100' : 'Disponibile solo con budget < metà'}</div>` : ''}
               </label>`;
           }).join('');
 
