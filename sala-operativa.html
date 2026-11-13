@@ -848,7 +848,15 @@
 
       const stratsBox = document.getElementById('stratagems-picker');
       stratsBox.innerHTML = '';
-      catalog.forEach(s => {
+      // Ordinamento per efficacia (power) decrescente; a parità di potenza, per costo decrescente e poi nome
+      const sortedCatalog = [...catalog].sort((a, b) => {
+        const powerDiff = (b.power || 0) - (a.power || 0);
+        if (powerDiff !== 0) return powerDiff;
+        const costDiff = (b.cost || 0) - (a.cost || 0);
+        if (costDiff !== 0) return costDiff;
+        return (a.name || '').localeCompare(b.name || '');
+      });
+      sortedCatalog.forEach(s => {
         const div = document.createElement('div');
         div.className = 'selectable-item' + (selectedStratagems.has(s.id) ? ' selected' : '');
         const effectLabel = s.effect === 'shield'
