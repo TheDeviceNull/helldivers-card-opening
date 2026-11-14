@@ -15,6 +15,14 @@
     rel="stylesheet">
   <link rel="stylesheet" href="./assets/theme.css">
   <style>
+    body.mission-active-bg {
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      transition: background-image 0.5s ease;
+    }
+
     .container {
       max-width: 1200px;
       margin: 2rem auto;
@@ -648,6 +656,7 @@
       }
 
       await fetchUserProfile();
+      await loadBiomesConfig();
       await loadMissionConfig();
       await refreshMissionState();
     }
@@ -691,6 +700,49 @@
       }
     }
 
+    let biomeAssets = {};
+
+    async function loadBiomesConfig() {
+      try {
+        const resp = await fetch('assets/biomes.json');
+        if (resp.ok) {
+          biomeAssets = await resp.json();
+        }
+      } catch (e) {
+        console.warn("Impossibile caricare assets/biomes.json, fallback su default:", e);
+      }
+    }
+
+    function resolveBiomeImage(biomeName) {
+      if (!biomeName) return 'assets/biomes/default.png';
+      if (biomeAssets[biomeName]) {
+        return `assets/biomes/${biomeAssets[biomeName]}`;
+      }
+      const bLower = biomeName.toLowerCase().trim();
+      for (const [k, v] of Object.entries(biomeAssets)) {
+        if (k.toLowerCase().trim() === bLower) {
+          return `assets/biomes/${v}`;
+        }
+      }
+      return 'assets/biomes/default.png';
+    }
+
+    function updateActiveMissionBackground() {
+      if (currentView === 'active' && activeMission) {
+        let biome = '';
+        try {
+          const ctx = JSON.parse(activeMission.context || '{}');
+          biome = ctx.biome || '';
+        } catch (e) {}
+        const bgUrl = resolveBiomeImage(biome);
+        document.body.classList.add('mission-active-bg');
+        document.body.style.backgroundImage = `linear-gradient(rgba(11, 14, 20, 0.88), rgba(11, 14, 20, 0.94)), url('${bgUrl}')`;
+      } else {
+        document.body.classList.remove('mission-active-bg');
+        document.body.style.backgroundImage = '';
+      }
+    }
+
     function showState(st) {
       document.getElementById('mission-guide').style.display =
         st === 'create' || st === 'active' ? 'block' : 'none';
@@ -699,6 +751,7 @@
       document.getElementById('state-active').style.display = st === 'active' ? 'block' : 'none';
       document.getElementById('state-debrief').style.display = st === 'debrief' ? 'block' : 'none';
       currentView = st;
+      updateActiveMissionBackground();
       updateAudio();
     }
 
@@ -990,6 +1043,7 @@
         `Pianeta: ${ctx.planet || '—'} | Settore: ${ctx.sector || '—'} | ` +
         `Fazione: ${ctx.faction_display || ctx.faction || '—'} | Bioma: ${ctx.biome || '—'}`;
 
+      updateActiveMissionBackground();
       renderEventLog();
     }
 
