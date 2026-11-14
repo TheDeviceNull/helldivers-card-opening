@@ -1489,8 +1489,14 @@
     let currentOfferId = null;
 
     document.getElementById('btn-get-offer').onclick = async () => {
+      const btn = document.getElementById('btn-get-offer');
+      const originalText = btn.innerHTML;
       const dur = parseInt(document.getElementById('select-duration').value);
       const difficulty = dur === 48 ? 'easy' : 'hard';
+
+      btn.disabled = true;
+      btn.innerHTML = '📡 Scansione galattica in corso...';
+
       try {
         const resp = await fetchApi(`/mission/offer?difficulty=${difficulty}`);
         const res = await resp.json();
@@ -1507,6 +1513,9 @@
         updateCalculations(); // rivaluta il btn-start in base a squadra/loadout
       } catch (e) {
         alert('Errore di rete nella selezione pianeta.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
       }
     };
 
