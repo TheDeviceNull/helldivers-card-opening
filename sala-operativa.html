@@ -497,10 +497,11 @@
           <h3 style="font-family:var(--hd-font-condensed); color:var(--hd-accent); margin-top:0;">
             1. SQUADRA EDST (<span id="squad-count">0</span>/4)
           </h3>
-          <p style="font-size:0.85rem; color:var(--hd-text-muted);">
+          <p style="font-size:0.85rem; color:var(--hd-text-muted); margin-bottom:0.4rem;">
             Potenza Squadra: <strong id="preview-power" style="color:#fff;">0</strong> | Budget Stimato: <strong
               id="preview-budget" style="color:var(--hd-accent);">0</strong>
           </p>
+          <div id="synergy-badges" style="margin-bottom:0.6rem; display:flex; flex-wrap:wrap; gap:0.4rem;"></div>
           <div id="cards-picker" class="item-picker">
             <div style="color:var(--hd-text-muted); font-size:0.85rem; text-align:center; padding:1rem;">Caricamento
               carte disponibili...</div>
@@ -944,12 +945,18 @@
         eligibleCards.forEach(c => {
           const div = document.createElement('div');
           div.className = 'selectable-item' + (selectedCards.has(c.card_id) ? ' selected' : '');
+          const pw = c.veteran_power || (config?.card_power[c.rarity.toLowerCase()] || 2);
+          const vetBonus = c.veteran_bonus > 0 ? ` <span style="color:#7cfc00; font-size:0.75rem;">(+${c.veteran_bonus} vet.)</span>` : '';
+          const copiesLabel = c.total_copies > 1 ? `Copie: ${c.free_copies}/${c.total_copies}` : `Copie: ${c.free_copies}`;
           div.innerHTML = `
             <div>
               <strong>${esc(c.card_name)}</strong>
-              <div style="font-size:0.75rem; color:var(--hd-text-muted);">${esc(c.rarity.toUpperCase())} | Copie: ${c.free_copies}</div>
+              <div style="font-size:0.75rem; color:var(--hd-text-muted);">${esc(c.rarity.toUpperCase())} | ${copiesLabel}</div>
             </div>
-            <span class="badge badge-media">${c.rarity}</span>
+            <div style="text-align:right;">
+              <span class="badge badge-media">${c.rarity}</span>
+              <div style="font-size:0.8rem; font-weight:700; color:var(--hd-accent); margin-top:2px;">⚡ ${pw}${vetBonus}</div>
+            </div>
           `;
           div.onclick = () => toggleCard(c.card_id);
           cardsBox.appendChild(div);
@@ -1025,13 +1032,34 @@
       document.getElementById('loadout-max').textContent = maxSlots;
 
       let p = 0;
+      const selectedRarities = [];
       selectedCards.forEach(cid => {
         const c = eligibleCards.find(x => x.card_id === cid);
-        if (c && config) {
-          p += (config.card_power[c.rarity.toLowerCase()] || 2);
+        if (c) {
+          p += (c.veteran_power || (config?.card_power[c.rarity.toLowerCase()] || 2));
+          selectedRarities.push(c.rarity.toLowerCase());
         }
       });
       document.getElementById('preview-power').textContent = p;
+
+      // Rilevamento sinergie di squadra per l'interfaccia
+      const synBox = document.getElementById('synergy-badges');
+      if (synBox) {
+        synBox.innerHTML = '';
+        if (selectedRarities.length >= 2) {
+          const nLow = selectedRarities.filter(r => r === 'comune' || r === 'rara').length;
+          const nHigh = selectedRarities.filter(r => r === 'elite' || r === 'leggendaria').length;
+          if (nLow === selectedRarities.length) {
+            synBox.innerHTML += '<span class="badge" style="background:#2a4d69; color:#fff; font-size:0.75rem;" title="Squadra solo fanteria: -1 SC a stratagemmi offensivi (costo &ge; 3)">🛡️ Plotone d\'Assalto (-1 SC Damage)</span>';
+          }
+          if (nHigh >= 1 && nLow >= 2) {
+            synBox.innerHTML += '<span class="badge" style="background:#ffe800; color:#000; font-size:0.75rem; font-weight:700;" title="Leadership integrata: +15% copertura passiva su ogni evento">⭐ Catena di Comando (+15% Copertura)</span>';
+          }
+          if (nHigh === selectedRarities.length) {
+            synBox.innerHTML += '<span class="badge" style="background:#800020; color:#fff; font-size:0.75rem; font-weight:700;" title="Unità scelte: +10 HP iniziali">⚡ Forze Speciali (+10 HP Iniziali)</span>';
+          }
+        }
+      }
 
       const dur = parseInt(document.getElementById('select-duration').value);
       const eventsTotal = dur === 48 ? 3 : 4;
