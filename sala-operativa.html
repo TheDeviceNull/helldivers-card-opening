@@ -541,6 +541,7 @@
           <span class="badge badge-media" id="op-planet">Pianeta: —</span>
           <span class="badge badge-media" style="margin-left:0.5rem;" id="op-sector">Settore: —</span>
           <span class="badge badge-alta" style="margin-left:0.5rem;" id="op-faction">Fazione: —</span>
+          <span class="badge" id="op-mo" style="display:none; margin-left:0.5rem; background:#ffe800; color:#000; font-weight:700;">⭐ OBIETTIVO PRINCIPALE (+25% Punti)</span>
           <span style="font-size:0.8rem; color:var(--hd-text-muted); margin-left:1rem;" id="op-biome"></span>
         </div>
         <div style="display:flex; justify-content:flex-end;">
@@ -881,7 +882,7 @@
             `Penalità HP persi: −${money(breakdown.hp_penalty)}`,
             `Bonus eventi superati: +${money(breakdown.event_bonus)}`,
             `Punteggio grezzo: ${money(breakdown.raw)}`,
-            `Moltiplicatori: ×${money(breakdown.multiplier)} difficoltà ×${money(breakdown.handicap)} handicap`,
+            `Moltiplicatori: ×${money(breakdown.multiplier)} difficoltà${breakdown.is_major_order ? ' ×1,25 Obiettivo Principale' : ''} ×${money(breakdown.handicap)} handicap`,
             `PUNTEGGIO FINALE: ${money(breakdown.final)} punti`,
           ]
         : [
@@ -1569,6 +1570,8 @@
         document.getElementById('op-planet').textContent = 'Pianeta: ' + (res.planet || '—');
         document.getElementById('op-sector').textContent = 'Settore: ' + (res.sector || '—');
         document.getElementById('op-faction').textContent = 'Fazione: ' + (res.faction_display || res.faction || '—');
+        const moBadge = document.getElementById('op-mo');
+        if (moBadge) moBadge.style.display = res.is_major_order ? 'inline-block' : 'none';
         document.getElementById('op-biome').textContent = res.biome || '';
         document.getElementById('offer-panel').style.display = '';
         updateCalculations(); // rivaluta il btn-start in base a squadra/loadout
