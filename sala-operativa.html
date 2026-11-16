@@ -568,10 +568,13 @@
         </div>
 
         <section class="mission-squad" aria-labelledby="mission-squad-title">
-          <h3 id="mission-squad-title"
-            style="font-family:var(--hd-font-condensed); color:var(--hd-accent); margin:0;">
-            SQUADRA IN MISSIONE
-          </h3>
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.5rem;">
+            <h3 id="mission-squad-title"
+              style="font-family:var(--hd-font-condensed); color:var(--hd-accent); margin:0;">
+              SQUADRA IN MISSIONE
+            </h3>
+            <div id="active-mission-synergies" style="display:flex; flex-wrap:wrap; gap:0.4rem;"></div>
+          </div>
           <ul id="mission-squad-list" class="mission-squad-list"></ul>
         </section>
 
@@ -1124,6 +1127,30 @@
         ctx = JSON.parse(activeMission.context || '{}');
       } catch (error) {
         console.error('Contesto missione non valido:', error);
+      }
+
+      // Rendering sinergie attive nell'intestazione della squadra in missione
+      const activeSynBox = document.getElementById('active-mission-synergies');
+      if (activeSynBox) {
+        activeSynBox.innerHTML = '';
+        let syns = ctx.synergies || [];
+        if (syns.length === 0 && missionSquad.length >= 2) {
+          const rarities = missionSquad.map(c => (c.rarity || '').toLowerCase());
+          const nLow = rarities.filter(r => r === 'comune' || r === 'rara').length;
+          const nHigh = rarities.filter(r => r === 'elite' || r === 'leggendaria').length;
+          if (nLow === rarities.length) syns.push({ id: 'line_assault_platoon', name: 'Plotone d\'Assalto', desc: '-1 SC Damage (>=3)' });
+          if (nHigh >= 1 && nLow >= 2) syns.push({ id: 'chain_of_command', name: 'Catena di Comando', desc: '+15% Copertura' });
+          if (nHigh === rarities.length) syns.push({ id: 'special_forces', name: 'Forze Speciali', desc: '+10 HP Iniziali' });
+        }
+        for (const s of syns) {
+          if (s.id === 'line_assault_platoon') {
+            activeSynBox.innerHTML += '<span class="badge" style="background:#2a4d69; color:#fff; font-size:0.75rem;" title="Squadra solo fanteria: -1 SC a stratagemmi offensivi (costo &ge; 3)">🛡️ Plotone d\'Assalto (-1 SC Damage)</span>';
+          } else if (s.id === 'chain_of_command') {
+            activeSynBox.innerHTML += '<span class="badge" style="background:#ffe800; color:#000; font-size:0.75rem; font-weight:700;" title="Leadership integrata: +15% copertura passiva su ogni evento">⭐ Catena di Comando (+15% Copertura)</span>';
+          } else if (s.id === 'special_forces') {
+            activeSynBox.innerHTML += '<span class="badge" style="background:#800020; color:#fff; font-size:0.75rem; font-weight:700;" title="Unità scelte: +10 HP iniziali">⚡ Forze Speciali (+10 HP Iniziali)</span>';
+          }
+        }
       }
       document.getElementById('active-mission-title').textContent =
         `OPERAZIONE IN CORSO: ${ctx.op_name || 'SALVATAGGIO SQUADRA FAST'}`;
