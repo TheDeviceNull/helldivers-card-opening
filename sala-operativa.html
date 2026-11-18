@@ -45,6 +45,35 @@
       .grid-2 {
         grid-template-columns: 1fr;
       }
+
+      .container {
+        margin: 1rem auto;
+        padding: 0 0.5rem;
+      }
+
+      /* Riduzione 50% dimensioni card squadra in visualizzazione verticale */
+      .mission-squad-list {
+        grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+        gap: 0.5rem;
+      }
+
+      .mission-squad-card-info {
+        padding: 0.35rem 0.4rem;
+        gap: 0.2rem;
+      }
+
+      .mission-squad-card-name {
+        font-size: 0.72rem;
+      }
+
+      .mission-squad-power {
+        font-size: 0.72rem;
+      }
+
+      .mission-squad-card-meta .badge {
+        font-size: 0.6rem;
+        padding: 0.1rem 0.25rem;
+      }
     }
 
     .badge {

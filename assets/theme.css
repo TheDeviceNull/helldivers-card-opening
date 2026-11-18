@@ -60,6 +60,8 @@ body {
 .nav-brand img {
   width: 28px;
   height: 28px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .nav-controls {
@@ -164,4 +166,64 @@ body {
 
 .hd-btn-secondary:hover {
   background: rgba(255, 232, 0, 0.1);
+}
+
+/* ===== RESPONSIVE NAVBAR COMUNE ===== */
+@media (max-width: 768px) {
+  .top-nav-bar {
+    height: 54px;
+    padding: 0 0.5rem;
+    gap: 6px;
+  }
+
+  .nav-brand {
+    flex-shrink: 0;
+  }
+
+  .nav-brand span {
+    display: none;
+  }
+
+  .nav-controls {
+    gap: 4px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .nav-controls::-webkit-scrollbar {
+    display: none;
+  }
+
+  .btn-nav-action {
+    padding: 5px 8px;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    gap: 3px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .btn-nav-action .btn-emoji {
+    display: none;
+  }
+
+  .user-profile-badge {
+    padding: 3px 6px;
+    gap: 5px;
+    flex-shrink: 0;
+  }
+
+  .user-avatar {
+    width: 22px;
+    height: 22px;
+  }
+
+  .user-name {
+    font-size: 0.75rem;
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
