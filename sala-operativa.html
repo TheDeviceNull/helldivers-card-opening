@@ -1094,7 +1094,7 @@
             synBox.innerHTML += '<span class="badge" style="background:#ffe800; color:#000; font-size:0.75rem; font-weight:700;" title="Leadership integrata: +15% copertura passiva su ogni evento">⭐ Catena di Comando (+15% Copertura)</span>';
           }
           if (nHigh === selectedRarities.length) {
-            synBox.innerHTML += '<span class="badge" style="background:#800020; color:#fff; font-size:0.75rem; font-weight:700;" title="Unità scelte: +10 HP iniziali">⚡ Forze Speciali (+10 HP Iniziali)</span>';
+            synBox.innerHTML += '<span class="badge" style="background:#800020; color:#fff; font-size:0.75rem; font-weight:700;" title="Unità scelte: +15 HP iniziali e +15% Budget SC">⚡ Forze Speciali (+15 HP / +15% SC)</span>';
           }
         }
       }
@@ -1175,7 +1175,7 @@
           const nHigh = rarities.filter(r => r === 'elite' || r === 'leggendaria').length;
           if (nLow === rarities.length) syns.push({ id: 'line_assault_platoon', name: 'Plotone d\'Assalto', desc: '-1 SC Damage (>=3)' });
           if (nHigh >= 1 && nLow >= 2) syns.push({ id: 'chain_of_command', name: 'Catena di Comando', desc: '+15% Copertura' });
-          if (nHigh === rarities.length) syns.push({ id: 'special_forces', name: 'Forze Speciali', desc: '+10 HP Iniziali' });
+          if (nHigh === rarities.length) syns.push({ id: 'special_forces', name: 'Forze Speciali', desc: '+15 HP / +15% SC' });
         }
         for (const s of syns) {
           if (s.id === 'line_assault_platoon') {
@@ -1183,7 +1183,7 @@
           } else if (s.id === 'chain_of_command') {
             activeSynBox.innerHTML += '<span class="badge" style="background:#ffe800; color:#000; font-size:0.75rem; font-weight:700;" title="Leadership integrata: +15% copertura passiva su ogni evento">⭐ Catena di Comando (+15% Copertura)</span>';
           } else if (s.id === 'special_forces') {
-            activeSynBox.innerHTML += '<span class="badge" style="background:#800020; color:#fff; font-size:0.75rem; font-weight:700;" title="Unità scelte: +10 HP iniziali">⚡ Forze Speciali (+10 HP Iniziali)</span>';
+            activeSynBox.innerHTML += '<span class="badge" style="background:#800020; color:#fff; font-size:0.75rem; font-weight:700;" title="Unità scelte: +15 HP iniziali e +15% Budget SC">⚡ Forze Speciali (+15 HP / +15% SC)</span>';
           }
         }
       }
