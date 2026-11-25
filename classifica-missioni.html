@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="it">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,7 +10,9 @@
   <link rel="apple-touch-icon" sizes="192x192" href="assets/android-chrome-192x192.png">
   <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png">
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="./assets/theme.css">
   <style>
     .container {
@@ -24,6 +27,80 @@
       justify-content: space-between;
       gap: 1.5rem;
       margin-bottom: 1.5rem;
+    }
+
+    .view-switch-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .btn-view-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.65rem 1.25rem;
+      border: 1px solid var(--hd-border);
+      border-radius: 2px;
+      background: var(--hd-surface-bright);
+      color: var(--hd-text);
+      font-family: var(--hd-font-condensed);
+      font-size: 0.95rem;
+      font-weight: 700;
+      text-decoration: none;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .btn-view-toggle:hover {
+      background: rgba(255, 232, 0, 0.15);
+      border-color: var(--hd-accent);
+      color: var(--hd-accent);
+    }
+
+    .btn-view-toggle.active {
+      background: var(--hd-accent);
+      border-color: var(--hd-accent);
+      color: #000;
+      font-weight: 800;
+      box-shadow: 0 0 10px rgba(255, 232, 0, 0.3);
+    }
+
+    .progress-bar-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      min-width: 130px;
+    }
+
+    .progress-bar {
+      flex: 1;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--hd-accent);
+      transition: width 0.3s ease;
+    }
+
+    .hp-badge {
+      font-weight: 700;
+      color: #4caf50;
+    }
+
+    .hp-badge.hp-warning {
+      color: #ff9800;
+    }
+
+    .hp-badge.hp-danger {
+      color: #f44336;
     }
 
     .leaderboard-title {
@@ -329,6 +406,7 @@
     }
   </style>
 </head>
+
 <body>
 
   <header class="top-nav-bar">
@@ -360,17 +438,29 @@
       <div>
         <h1 id="leaderboard-title" class="leaderboard-title">Ruolo d'Onore SEAF: Salvataggio Squadra FAST</h1>
         <p class="leaderboard-description">
-          La classifica somma i punteggi finali delle missioni concluse.
-          I migliori tre Helldiver del mese ricevono un premio sul server Discord Helldivers 2 Italia.
+          Monitoraggio strategico delle operazioni FAST. Consulta il ruolo d'onore delle missioni concluse o
+          lo stato di avanzamento delle squadre attualmente impegnate sul campo di battaglia.
         </p>
       </div>
-      <label class="season-field" for="season-select">
+      <label id="season-field-wrap" class="season-field" for="season-select">
         Seleziona stagione
         <select id="season-select" class="season-select"></select>
       </label>
     </section>
 
-    <section class="hd-card personal-missions-card" aria-labelledby="personal-missions-title">
+    <!-- Tasto / Interruttore Viste -->
+    <div class="view-switch-bar">
+      <a id="btn-view-completed" href="classifica-missioni.html" class="btn-view-toggle">
+        <span>🏆</span> Missioni Concluse (Classifica)
+      </a>
+      <a id="btn-view-active" href="classifica-missioni.html?view=active" class="btn-view-toggle">
+        <span>🛰️</span> Missioni in Corso
+      </a>
+    </div>
+
+    <!-- Vista Missioni Personali (Solo vista Classifica) -->
+    <section id="personal-missions-section" class="hd-card personal-missions-card"
+      aria-labelledby="personal-missions-title">
       <h2 id="personal-missions-title" class="personal-missions-title">I tuoi risultati nella stagione</h2>
       <p class="personal-missions-description">
         Il RAW viene confrontato con la soglia del pacchetto. Il punteggio finale, dopo i moltiplicatori, contribuisce
@@ -381,7 +471,8 @@
       </div>
     </section>
 
-    <section class="hd-card leaderboard-card" aria-label="Classifica missioni">
+    <!-- Vista Classifica (Missioni Concluse) -->
+    <section id="leaderboard-section" class="hd-card leaderboard-card" aria-label="Classifica missioni">
       <table class="leaderboard-table">
         <thead>
           <tr>
@@ -395,6 +486,27 @@
         <tbody id="leaderboard-body">
           <tr class="state-row">
             <td colspan="5">Caricamento classifica in corso...</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Vista Missioni in Corso (Attive) -->
+    <section id="active-missions-section" class="hd-card leaderboard-card" aria-label="Missioni in corso"
+      style="display: none;">
+      <table class="leaderboard-table">
+        <thead>
+          <tr>
+            <th scope="col">Ufficiale tattico</th>
+            <th scope="col">Teatro Operativo</th>
+            <th scope="col">Integrità HP</th>
+            <th scope="col">Avanzamento Eventi</th>
+            <th scope="col">Prossimo Ingaggio</th>
+          </tr>
+        </thead>
+        <tbody id="active-missions-body">
+          <tr class="state-row">
+            <td colspan="5">Rilevamento squadre operative in corso...</td>
           </tr>
         </tbody>
       </table>
@@ -569,11 +681,142 @@
     window.addEventListener('DOMContentLoaded', () => {
       mountMuteButton();
       void startSoundtrack();
-      loadLeaderboard();
-      document.getElementById('season-select').addEventListener('change', event => {
-        loadLeaderboard(event.target.value);
-      });
+
+      const params = new URLSearchParams(window.location.search);
+      const isViewActive = params.get('view') === 'active';
+
+      const btnCompleted = document.getElementById('btn-view-completed');
+      const btnActive = document.getElementById('btn-view-active');
+      const seasonWrap = document.getElementById('season-field-wrap');
+      const personalSection = document.getElementById('personal-missions-section');
+      const leaderboardSection = document.getElementById('leaderboard-section');
+      const activeSection = document.getElementById('active-missions-section');
+
+      if (isViewActive) {
+        btnActive.classList.add('active');
+        btnCompleted.classList.remove('active');
+        seasonWrap.style.display = 'none';
+        personalSection.style.display = 'none';
+        leaderboardSection.style.display = 'none';
+        activeSection.style.display = 'block';
+        loadActiveMissions();
+      } else {
+        btnCompleted.classList.add('active');
+        btnActive.classList.remove('active');
+        seasonWrap.style.display = 'grid';
+        personalSection.style.display = 'block';
+        leaderboardSection.style.display = 'block';
+        activeSection.style.display = 'none';
+        loadLeaderboard();
+        document.getElementById('season-select').addEventListener('change', event => {
+          loadLeaderboard(event.target.value);
+        });
+      }
     });
+
+    async function loadActiveMissions() {
+      const tbody = document.getElementById('active-missions-body');
+      try {
+        // Recuperiamo anche i dati dell'utente loggato per il badge (TU)
+        let myUserId = null;
+        try {
+          const meResp = await fetchApi('/mission/state');
+          if (meResp.ok) {
+            const meData = await meResp.json();
+            if (meData && meData.user_id) myUserId = meData.user_id;
+          }
+        } catch (_) { }
+
+        const resp = await fetchApi('/mission/active');
+        if (resp.ok) {
+          const data = await resp.json();
+          renderActiveTable(data.active_missions, myUserId);
+        } else {
+          renderMessage('Errore nel recupero delle squadre attive.', true);
+        }
+      } catch (e) {
+        renderMessage('Impossibile comunicare con il comando centrale SEAF.', true);
+      }
+
+      function renderMessage(message, isError = false) {
+        tbody.innerHTML = `
+          <tr class="state-row${isError ? ' error' : ''}">
+            <td colspan="5">${message}</td>
+          </tr>`;
+      }
+    }
+
+    function renderActiveTable(list, myUserId) {
+      const tbody = document.getElementById('active-missions-body');
+      tbody.replaceChildren();
+
+      if (!list || list.length === 0) {
+        tbody.innerHTML = `
+          <tr class="state-row">
+            <td colspan="5">Nessun distaccamento operativo sul campo al momento. Tutti i fronti sono stabili.</td>
+          </tr>`;
+        return;
+      }
+
+      list.forEach(m => {
+        const tr = document.createElement('tr');
+        const isMe = myUserId && String(myUserId) === String(m.user_id);
+        if (isMe) tr.className = 'my-row';
+
+        const hp = num(m.hp);
+        let hpClass = 'hp-badge';
+        if (hp <= 30) hpClass += ' hp-danger';
+        else if (hp <= 60) hpClass += ' hp-warning';
+
+        const totalEv = num(m.events_total);
+        const compEv = num(m.events_completed);
+        const pct = totalEv > 0 ? Math.min(100, Math.round((compEv / totalEv) * 100)) : 0;
+
+        let nextDueStr = 'Nessuno programmato';
+        if (m.next_event_at) {
+          const dueTs = Number(m.next_event_at) * 1000;
+          const diffMs = dueTs - Date.now();
+          const dueDt = new Date(dueTs);
+          const timeFormatted = dueDt.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+          if (diffMs > 0) {
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffMin = Math.floor((diffMs % 3600000) / 60000);
+            const countdown = diffHours > 0 ? `tra ${diffHours}h ${diffMin}m` : `tra ${diffMin}m`;
+            nextDueStr = `${timeFormatted} (${countdown})`;
+          } else {
+            nextDueStr = `In corso (${timeFormatted})`;
+          }
+        } else if (compEv >= totalEv && totalEv > 0) {
+          nextDueStr = 'Eventi conclusi';
+        }
+
+        tr.innerHTML = `
+          <td class="leaderboard-name" data-label="Ufficiale tattico">
+            <span>${esc(m.display_name)}</span>
+            ${isMe ? '<span class="leaderboard-me">(TU)</span>' : ''}
+          </td>
+          <td data-label="Teatro Operativo">
+            <b>${esc(m.planet)}</b> <span style="color: var(--hd-text-muted);">(${esc(m.faction)})</span>
+          </td>
+          <td data-label="Integrità HP">
+            <span class="${hpClass}">${hp} HP</span>
+          </td>
+          <td data-label="Avanzamento Eventi">
+            <div class="progress-bar-wrap">
+              <span>${compEv} / ${totalEv}</span>
+              <div class="progress-bar">
+                <div class="progress-bar-fill" style="width: ${pct}%;"></div>
+              </div>
+            </div>
+          </td>
+          <td data-label="Prossimo Ingaggio" style="white-space: nowrap;">
+            ${esc(nextDueStr)}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
   </script>
 </body>
+
 </html>
