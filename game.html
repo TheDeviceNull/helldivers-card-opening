@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Tactical — Simulatore Tattico a Turni Super Terra</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="apple-touch-icon" sizes="192x192" href="assets/android-chrome-192x192.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="./assets/theme.css">
+  <style>
+    :root {
+      --game-bg: #0b0e14;
+      --game-panel: rgba(16, 22, 34, 0.92);
+      --game-border: #2a364f;
+      --game-accent: #ffe800;
+      --game-danger: #ef4444;
+      --game-friendly: #3b82f6;
+    }
+
+    body {
+      background-color: var(--game-bg);
+      color: #fff;
+      font-family: var(--hd-font-sans, 'Barlow', sans-serif);
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Nav */
+    .top-nav-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 1rem;
+      background: rgba(10, 14, 22, 0.95);
+      border-bottom: 1px solid var(--game-border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(8px);
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      text-decoration: none;
+      color: #fff;
+      font-family: var(--hd-font-condensed);
+      font-weight: 800;
+      font-size: 1.1rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .nav-brand img {
+      width: 28px;
+      height: 28px;
+    }
+
+    .nav-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-nav-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.65rem;
+      background: var(--hd-surface-bright, #1a2234);
+      border: 1px solid var(--game-border);
+      color: #ddd;
+      text-decoration: none;
+      font-family: var(--hd-font-condensed);
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      border-radius: 2px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-nav-action:hover, .btn-nav-action.active {
+      border-color: var(--game-accent);
+      color: #fff;
+      background: rgba(255, 232, 0, 0.12);
+    }
+
+    /* Layout Principale */
+    .game-layout {
+      display: flex;
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      height: calc(100vh - 54px);
+    }
+
+    /* Viewport Mappa Esagonale */
+    .game-viewport {
+      flex: 1;
+      position: relative;
+      background: #080a0f;
+      overflow: hidden;
+      cursor: grab;
+      touch-action: none;
+    }
+
+    .game-viewport:active {
+      cursor: grabbing;
+    }
+
+    #game-canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Overlay HUD Mappa */
+    .hud-overlay {
+      position: absolute;
+      top: 1rem;
+      left: 1rem;
+      right: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .hud-box {
+      background: var(--game-panel);
+      border: 1px solid var(--game-border);
+      padding: 0.6rem 0.9rem;
+      border-radius: 3px;
+      pointer-events: auto;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(6px);
+    }
+
+    .hud-title {
+      font-family: var(--hd-font-condensed);
+      font-weight: 800;
+      color: var(--game-accent);
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.2rem;
+    }
+
+    .hud-sub {
+      font-size: 0.8rem;
+      color: #aaa;
+    }
+
+    /* Pannello Laterale / Bottom Dock */
+    .game-sidebar {
+      width: 380px;
+      background: var(--game-panel);
+      border-left: 1px solid var(--game-border);
+      display: flex;
+      flex-direction: column;
+      z-index: 20;
+      backdrop-filter: blur(10px);
+    }
+
+    .sidebar-header {
+      padding: 0.9rem 1rem;
+      border-bottom: 1px solid var(--game-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .sidebar-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .sidebar-footer {
+      padding: 0.8rem 1rem;
+      border-top: 1px solid var(--game-border);
+      background: rgba(12, 16, 26, 0.95);
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    /* Card Unità */
+    .unit-card {
+      background: rgba(22, 30, 46, 0.7);
+      border: 1px solid var(--game-border);
+      padding: 0.75rem;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .unit-card:hover {
+      border-color: #4b6088;
+      background: rgba(30, 42, 64, 0.7);
+    }
+
+    .unit-card.active {
+      border-color: var(--game-accent);
+      background: rgba(255, 232, 0, 0.08);
+      box-shadow: 0 0 10px rgba(255, 232, 0, 0.2);
+    }
+
+    .unit-card.dead {
+      opacity: 0.45;
+      filter: grayscale(80%);
+      cursor: not-allowed;
+    }
+
+    .unit-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.35rem;
+    }
+
+    .unit-name {
+      font-family: var(--hd-font-condensed);
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: #fff;
+    }
+
+    .unit-archetype {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: #aaa;
+      font-family: var(--hd-font-condensed);
+    }
+
+    /* Barre Vita e AP */
+    .bar-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      margin-top: 0.4rem;
+    }
+
+    .bar-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      font-family: var(--hd-font-condensed);
+    }
+
+    .bar-label {
+      width: 24px;
+      color: #999;
+    }
+
+    .bar-track {
+      flex: 1;
+      height: 8px;
+      background: #111827;
+      border-radius: 2px;
+      overflow: hidden;
+      border: 1px solid #1f2937;
+    }
+
+    .bar-fill-hp {
+      height: 100%;
+      background: #22c55e;
+      transition: width 0.3s ease;
+    }
+
+    .bar-fill-ap {
+      height: 100%;
+      background: #3b82f6;
+      transition: width 0.3s ease;
+    }
+
+    /* Wizard Selezione Iniziale */
+    .wizard-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(8, 11, 18, 0.95);
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      overflow-y: auto;
+    }
+
+    .wizard-card {
+      background: var(--game-panel);
+      border: 1px solid var(--game-border);
+      border-top: 4px solid var(--game-accent);
+      border-radius: 3px;
+      width: 100%;
+      max-width: 680px;
+      padding: 1.5rem;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+    }
+
+    .wizard-step-title {
+      font-family: var(--hd-font-condensed);
+      font-weight: 800;
+      font-size: 1.4rem;
+      color: var(--game-accent);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+    }
+
+    .wizard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 0.75rem;
+      margin: 1rem 0;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .wizard-item {
+      background: rgba(26, 36, 54, 0.6);
+      border: 1px solid var(--game-border);
+      padding: 0.75rem;
+      border-radius: 2px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+
+    .wizard-item:hover {
+      border-color: #4b6088;
+      background: rgba(35, 48, 72, 0.8);
+    }
+
+    .wizard-item.selected {
+      border-color: var(--game-accent);
+      background: rgba(255, 232, 0, 0.12);
+    }
+
+    /* Responsive mobile */
+    @media (max-width: 900px) {
+      .game-layout {
+        flex-direction: column;
+      }
+
+      .game-sidebar {
+        width: 100%;
+        height: 280px;
+        border-left: none;
+        border-top: 1px solid var(--game-border);
+      }
+
+      .game-viewport {
+        height: calc(100vh - 54px - 280px);
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Top Navigation -->
+  <header class="top-nav-bar">
+    <a href="index.html" class="nav-brand">
+      <img src="./assets/superearth.png" alt="Super Earth Logo">
+      <span>Archivio Carte Super Terra</span>
+    </a>
+    <div class="nav-controls">
+      <a href="index.html#collection" class="btn-nav-action">
+        <span>🗂️</span> Collezione
+      </a>
+      <a href="sala-operativa.html" class="btn-nav-action">
+        <span>⚔️</span> Sala Operativa
+      </a>
+      <a href="game.html" class="btn-nav-action active">
+        <span>🎯</span> Tattico
+      </a>
+      <a href="classifica-tattico.html" class="btn-nav-action">
+        <span>🏆</span> Classifica Tattico
+      </a>
+      <div id="auth-container">
+        <button class="btn-nav-action" id="btn-login" style="display:none;">
+          Login Discord
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Game Layout -->
+  <div class="game-layout">
+
+    <!-- Viewport Mappa Canvas -->
+    <div class="game-viewport" id="viewport">
+      <canvas id="game-canvas"></canvas>
+
+      <!-- HUD Sovrapposto -->
+      <div class="hud-overlay">
+        <div class="hud-box" id="hud-mission">
+          <div class="hud-title" id="hud-planet-name">Operazione Tattica</div>
+          <div class="hud-sub" id="hud-mission-desc">In attesa dispiegamento...</div>
+        </div>
+
+        <div class="hud-box" id="hud-turn" style="text-align: right;">
+          <div class="hud-title">Turno <span id="hud-turn-num">1</span>/<span id="hud-max-turns">15</span></div>
+          <div class="hud-sub">Kills: <span id="hud-kills">0</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pannello Laterale Squadra e Azioni -->
+    <aside class="game-sidebar">
+      <div class="sidebar-header">
+        <span style="font-family: var(--hd-font-condensed); font-weight: 800; text-transform: uppercase; color: var(--game-accent);">
+          Squadra EDST
+        </span>
+        <span id="active-unit-ap" style="font-size: 0.85rem; color: #3b82f6; font-weight: 700; font-family: var(--hd-font-condensed);">
+          AP: --
+        </span>
+      </div>
+
+      <div class="sidebar-content" id="units-container">
+        <!-- Generato dinamicamente da ui.js -->
+        <div style="color: #888; text-align: center; margin-top: 2rem;">Caricamento unità...</div>
+      </div>
+
+      <div class="sidebar-footer">
+        <button class="hd-btn" id="btn-end-turn" style="flex: 2; padding: 0.6rem;">
+          Concludi Turno
+        </button>
+        <button class="hd-btn hd-btn-danger" id="btn-abandon" style="flex: 1; padding: 0.6rem; background: #3b1111; border-color: #ef4444; color: #ef4444;">
+          Ritirata
+        </button>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- Wizard Selezione Missione / Squadra (visibile solo se nessuna run attiva) -->
+  <div class="wizard-overlay" id="wizard-modal" style="display: none;">
+    <div class="wizard-card">
+      <div class="wizard-step-title" id="wizard-title">Seleziona Fazione & Pianeta</div>
+      <p id="wizard-desc" style="color: #aaa; font-size: 0.9rem; margin-top: 0;">
+        Scegli il fronte galattico in cui mobilitare la tua squadra d'assalto.
+      </p>
+
+      <div id="wizard-step-1">
+        <div class="wizard-grid" id="planets-list">
+          <!-- Pianeti attivi -->
+        </div>
+        <div style="text-align: right; margin-top: 1rem;">
+          <button class="hd-btn" id="btn-step-1-next" disabled>Avanti: Missione</button>
+        </div>
+      </div>
+
+      <div id="wizard-step-2" style="display: none;">
+        <div class="wizard-grid" id="missions-list">
+          <!-- Missioni -->
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-top: 1rem;">
+          <button class="hd-btn" id="btn-step-2-prev" style="background:#222;">Indietro</button>
+          <button class="hd-btn" id="btn-step-2-next" disabled>Avanti: Squadra</button>
+        </div>
+      </div>
+
+      <div id="wizard-step-3" style="display: none;">
+        <div style="color: #bbb; font-size: 0.85rem; margin-bottom: 0.5rem;">
+          Seleziona da 2 a 4 carte EDST dalla tua collezione per comporre la squadra:
+        </div>
+        <div class="wizard-grid" id="cards-list">
+          <!-- Carte utente -->
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-top: 1rem;">
+          <button class="hd-btn" id="btn-step-3-prev" style="background:#222;">Indietro</button>
+          <button class="hd-btn" id="btn-start-game" disabled>Dispiega Squadra</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Script Modulari del Gioco -->
+  <script type="module" src="./assets/game/ui.js"></script>
+
+</body>
+</html>
