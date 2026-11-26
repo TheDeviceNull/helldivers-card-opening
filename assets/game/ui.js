@@ -41,8 +41,13 @@ class GameUI {
     const token = getSessionToken();
     if (!token) {
       document.getElementById('wizard-modal').style.display = 'none';
+      const unauthModal = document.getElementById('unauth-modal');
+      if (unauthModal) unauthModal.style.display = 'flex';
       return;
     }
+
+    const unauthModal = document.getElementById('unauth-modal');
+    if (unauthModal) unauthModal.style.display = 'none';
 
     // Controlla se c'è già una run attiva per riconnessione immediata
     try {
@@ -415,7 +420,9 @@ class GameUI {
   }
 }
 
-// Avvio automatico al caricamento del DOM
-window.addEventListener('DOMContentLoaded', () => {
+// Avvio immediato o al caricamento del DOM
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', () => new GameUI());
+} else {
   new GameUI();
-});
+}

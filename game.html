@@ -455,6 +455,18 @@
   </div>
 
   <!-- Wizard Selezione Missione / Squadra (visibile solo se nessuna run attiva) -->
+  <div class="wizard-overlay" id="unauth-modal" style="display: none;">
+    <div class="wizard-card" style="text-align: center; max-width: 480px;">
+      <div class="wizard-step-title">Accesso Richiesto</div>
+      <p style="color: #aaa; margin: 1rem 0 1.5rem;">
+        Per accedere alla mappa tattica e guidare la tua squadra EDST, effettua il login con il tuo account Discord autorizzato.
+      </p>
+      <button class="hd-btn" id="btn-login-modal" onclick="import('./assets/common.js').then(m => m.loginWithDiscord('game.html'))">
+        Accedi con Discord
+      </button>
+    </div>
+  </div>
+
   <div class="wizard-overlay" id="wizard-modal" style="display: none;">
     <div class="wizard-card">
       <div class="wizard-step-title" id="wizard-title">Seleziona Fazione & Pianeta</div>
