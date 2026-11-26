@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Classifica Gioco Tattico — Super Terra</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="apple-touch-icon" sizes="192x192" href="assets/android-chrome-192x192.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="./assets/theme.css">
+  <style>
+    .container {
+      max-width: 1000px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+
+    .leaderboard-heading {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .table-container {
+      overflow-x: auto;
+      border: 1px solid var(--hd-border);
+      border-radius: 3px;
+      background: var(--hd-surface);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.95rem;
+    }
+
+    th {
+      background: rgba(16, 22, 34, 0.95);
+      color: var(--hd-accent);
+      font-family: var(--hd-font-condensed);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.85rem 1rem;
+      border-bottom: 2px solid var(--hd-border);
+    }
+
+    td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      color: #ddd;
+    }
+
+    tr:hover td {
+      background: rgba(255, 232, 0, 0.04);
+    }
+
+    .rank-cell {
+      font-family: var(--hd-font-condensed);
+      font-weight: 800;
+      font-size: 1.1rem;
+      width: 50px;
+      text-align: center;
+    }
+
+    .rank-1 { color: #f59e0b; }
+    .rank-2 { color: #cbd5e1; }
+    .rank-3 { color: #b45309; }
+
+    .score-cell {
+      font-family: var(--hd-font-condensed);
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: var(--hd-accent);
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Header Navigazione Super Terra coordinato -->
+  <header class="top-nav-bar">
+    <a href="index.html" class="nav-brand">
+      <img src="./assets/superearth.png" alt="Super Earth Logo">
+      <span>Archivio Carte Super Terra</span>
+    </a>
+    <div class="nav-controls">
+      <a href="index.html#collection" class="btn-nav-action">
+        <span class="btn-emoji">🗂️</span> Collezione
+      </a>
+      <a href="sala-operativa.html" class="btn-nav-action">
+        <span class="btn-emoji">⚔️</span> Sala Operativa
+      </a>
+      <a href="game.html" class="btn-nav-action">
+        <span class="btn-emoji">🎯</span> Tattico
+      </a>
+      <a href="classifica-tattico.html" class="btn-nav-action active">
+        <span class="btn-emoji">🏆</span> Classifica Tattico
+      </a>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <div class="leaderboard-heading">
+      <div>
+        <h1 style="font-family: var(--hd-font-condensed); font-weight: 900; text-transform: uppercase; color: var(--hd-accent); margin: 0; font-size: 2.2rem; letter-spacing: 0.05em;">
+          Albo d'Oro Tattico SEAF
+        </h1>
+        <p style="color: var(--hd-text-muted); margin: 0.4rem 0 0; font-size: 0.95rem;">
+          Classifica mensile autoritativa delle operazioni a turni su griglia esagonale.
+        </p>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <label for="month-select" style="font-family: var(--hd-font-condensed); font-weight: 700; text-transform: uppercase; color: #aaa; font-size: 0.85rem;">Mese:</label>
+        <select id="month-select" class="hd-input" style="padding: 0.4rem 0.8rem; background: var(--hd-surface-bright); border: 1px solid var(--hd-border); color: #fff; border-radius: 2px;">
+          <!-- Opzioni generate da JS -->
+        </select>
+      </div>
+    </div>
+
+    <!-- Info Box Regolamento -->
+    <div class="hd-card" style="margin-bottom: 1.5rem; background: rgba(255, 232, 0, 0.04); border-left: 4px solid var(--hd-accent); padding: 1rem 1.25rem;">
+      <div style="font-family: var(--hd-font-condensed); font-weight: 800; color: var(--hd-accent); text-transform: uppercase; margin-bottom: 0.3rem;">
+        🎖️ Regole di Graduatoria e Assegnazione Punti
+      </div>
+      <p style="margin: 0; color: #ccc; font-size: 0.9rem; line-height: 1.45;">
+        La classifica mensile aggrega la somma di tutti i punteggi finali validati (<code>score_raw × difficulty_coef</code>). 
+        Il tetto di <strong>3 partite giornaliere</strong> garantisce parità di ingaggio per tutti gli Helldiver. A fine mese, i migliori tattici vengono decorati sul server Discord di Helldivers 2 Italia.
+      </p>
+    </div>
+
+    <!-- Tabella Classifica -->
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th style="text-align: center;">#</th>
+            <th>Helldiver / ID</th>
+            <th style="text-align: center;">Operazioni</th>
+            <th style="text-align: center;">Vittorie</th>
+            <th style="text-align: right;">Punteggio Totale</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboard-body">
+          <tr>
+            <td colspan="5" style="text-align: center; padding: 2.5rem; color: #888;">
+              Caricamento bollettino tattico in corso...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+
+  <script type="module">
+    import { fetchApi } from './assets/common.js';
+
+    const monthSelect = document.getElementById('month-select');
+    const tableBody = document.getElementById('leaderboard-body');
+
+    // Inizializza gli ultimi 3 mesi nel selettore
+    function initMonths() {
+      const now = new Date();
+      for (let i = 0; i < 4; i++) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const key = `${yyyy}-${mm}`;
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = `${d.toLocaleString('it-IT', { month: 'long' }).toUpperCase()} ${yyyy}`;
+        monthSelect.appendChild(opt);
+      }
+    }
+
+    async function loadLeaderboard(month) {
+      tableBody.innerHTML = `
+        <tr>
+          <td colspan="5" style="text-align: center; padding: 2.5rem; color: #888;">
+            Caricamento graduatoria ${month}...
+          </td>
+        </tr>
+      `;
+
+      try {
+        const res = await fetchApi(`/game/leaderboard?month=${encodeURIComponent(month)}`);
+        const data = await res.json();
+        
+        if (!data.ok || !data.leaderboard || data.leaderboard.length === 0) {
+          tableBody.innerHTML = `
+            <tr>
+              <td colspan="5" style="text-align: center; padding: 2.5rem; color: #888;">
+                Nessuna operazione registrata per il mese di ${month}.
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        tableBody.innerHTML = '';
+        data.leaderboard.forEach(entry => {
+          const row = document.createElement('tr');
+          const rankClass = entry.rank === 1 ? 'rank-1' : (entry.rank === 2 ? 'rank-2' : (entry.rank === 3 ? 'rank-3' : ''));
+          const rankBadge = entry.rank === 1 ? '🥇' : (entry.rank === 2 ? '🥈' : (entry.rank === 3 ? '🥉' : entry.rank));
+
+          row.innerHTML = `
+            <td class="rank-cell ${rankClass}">${rankBadge}</td>
+            <td>
+              <strong style="color:#fff;">Helldiver #${entry.user_id}</strong>
+            </td>
+            <td style="text-align: center;">${entry.runs_count}</td>
+            <td style="text-align: center; color: #22c55e; font-weight: 700;">${entry.wins_count}</td>
+            <td class="score-cell" style="text-align: right;">${entry.total_score.toLocaleString('it-IT')}</td>
+          `;
+          tableBody.appendChild(row);
+        });
+
+      } catch (err) {
+        console.error('[LEADERBOARD] Errore fetch:', err);
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="5" style="text-align: center; padding: 2.5rem; color: #ef4444;">
+              Impossibile contattare il server per il recupero della classifica.
+            </td>
+          </tr>
+        `;
+      }
+    }
+
+    monthSelect.addEventListener('change', () => {
+      loadLeaderboard(monthSelect.value);
+    });
+
+    initMonths();
+    loadLeaderboard(monthSelect.value);
+  </script>
+
+</body>
+</html>
