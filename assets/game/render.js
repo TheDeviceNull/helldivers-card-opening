@@ -113,6 +113,16 @@ export class HexRenderer {
   }
 
   updateState(state, legal, selectedUnitId = null) {
+    // Guard: state null = reset renderer (es. apertura wizard)
+    if (!state) {
+      this.gameState = null;
+      this.legalActions = null;
+      this.selectedUnitId = null;
+      this.terrainCached = false;
+      this.render();
+      return;
+    }
+
     const isNewMap = !this.gameState || this.gameState.cols !== state.cols || this.gameState.rows !== state.rows;
     this.gameState = state;
     this.legalActions = legal;
